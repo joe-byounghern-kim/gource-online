@@ -1,0 +1,139 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# One version, all public artifacts (design §5.6, §11). On a tag v<version>:
+# player-dist.tar.gz, static gource-rs binaries and their checksums, with build
+# provenance; @gource-online/protocol and gource-online on npm (dist-tag
+# beta for pre-releases); a GitHub Release. workflow_dispatch with
+# dry_run=true builds everything and stops before publishing (works in a
+# private repository, where attestations are not available).
+#
+# Before the first release: npm trusted publishing for this repository and
+# this workflow file, for both packages.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build only; publish nothing
+        type: boolean
+        default: true
+      player_site:
+        description: 'A dry run only: the site origin its player is built for (a private staging build)'
+        type: string
+        default: 'https://gource.online'
+
+permissions:
+  contents: read
+
+jobs:
+  gource-rs:
+    strategy:
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-musl, runner: ubuntu-24.04 }
+          - { target: aarch64-unknown-linux-musl, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - run: rustup toolchain install && rustup target add ${{ matrix.target }}
+      - run: cargo build --release --locked -p gource-cli --target ${{ matrix.target }}
+      - run: cp target/${{ matrix.target }}/release/gource-rs gource-rs-${{ matrix.target }}
+      - name: Licence notices of the crates in the binary
+        run: node scripts/third-party-licenses.mjs --package gource-cli --target ${{ matrix.target }} > gource-rs-${{ matrix.target }}.THIRD_PARTY_LICENSES.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: 'gource-rs-${{ matrix.target }}'
+          path: 'gource-rs-${{ matrix.target }}*'
+
+  player:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    # Both player builds (player-dist and the CLI's copy) link this exact source.
+    env:
+      GOURCE_SOURCE_REF: ${{ github.ref_name }}
+      GOURCE_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        run: echo "version=$(node -p "require('./packages/protocol/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: The tag matches every package
+        if: ${{ github.event_name == 'push' }}
+        run: node scripts/check-versions.mjs --expect "$GITHUB_REF_NAME"
+      - run: rustup toolchain install
+      - run: cargo install --locked wasm-bindgen-cli --version "$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' Cargo.lock)"
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test
+      # The player for viewer.gource.online: its settings are fixed at build time (apps/player/README.md).
+      # build-cli.sh below builds the CLI's copy without them.
+      - name: Player
+        env:
+          # A release is always for gource.online. Only a dry run, which publishes nothing, can name another site.
+          GOURCE_PLAYER_SENDERS: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run && inputs.player_site) || 'https://gource.online' }}
+          GOURCE_PLAYER_SOURCES: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run && inputs.player_site) || 'https://gource.online' }}
+        run: |
+          scripts/build-web.sh --release
+          env -u VITE_E2E_HOOKS -u GOURCE_PLAYER_TEST_BUILD pnpm -C apps/player build
+          # Nothing of a test build in what ships (apps/player/README.md).
+          test -d apps/player/dist/assets
+          test ! -e apps/player/dist/samples
+          if grep -rlE --include='*.js' '__gource\b|fixed-dt|mock-record' apps/player/dist/assets; then
+            echo 'the release build holds test switches' >&2
+            exit 1
+          fi
+          tar -C apps/player/dist -czf player-dist.tar.gz .
+      - run: scripts/build-cli.sh --pack
+      - run: pnpm -C packages/protocol pack --pack-destination "$GITHUB_WORKSPACE"
+      - name: Required package artifacts exist before upload
+        run: |
+          test -f "gource-online-protocol-${{ steps.v.outputs.version }}.tgz"
+          test -f "apps/cli/gource-online-${{ steps.v.outputs.version }}.tgz"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: |
+            player-dist.tar.gz
+            apps/cli/gource-online-*.tgz
+            gource-online-protocol-*.tgz
+
+  publish:
+    if: ${{ github.event_name == 'push' || !inputs.dry_run }}
+    needs: [gource-rs, player]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with: { path: out, merge-multiple: true }
+      - run: cd out && sha256sum player-dist.tar.gz gource-rs-* > SHA256SUMS && cat SHA256SUMS
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            out/player-dist.tar.gz
+            out/gource-rs-*
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
+      - run: npm install -g npm@^11.5.1
+      - name: npm (provenance; beta dist-tag for pre-releases)
+        run: |
+          tag=latest; case "${{ needs.player.outputs.version }}" in *-*) tag=beta;; esac
+          npm publish out/gource-online-protocol-*.tgz --provenance --access public --tag "$tag"
+          # upload-artifact keeps paths relative to the repository root.
+          npm publish out/apps/cli/gource-online-*.tgz --provenance --access public --tag "$tag"
+      - name: GitHub Release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          pre=""; case "${{ needs.player.outputs.version }}" in *-*) pre="--prerelease";; esac
+          gh release create "v${{ needs.player.outputs.version }}" $pre --generate-notes \
+            out/player-dist.tar.gz out/gource-rs-* out/SHA256SUMS

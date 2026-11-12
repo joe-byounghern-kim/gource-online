@@ -1,0 +1,28 @@
+{
+  "name": "@gource-online/protocol",
+  "version": "0.2.0-beta.1",
+  "description": "The shared contract of Gource Online: repository URL rules, the clone service API types, feature ids and Gource's git log command",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./repo-urls.json": "./vectors/repo-urls.json"
+  },
+  "files": ["dist", "vectors", "LICENSE", "README.md"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joe-byounghern-kim/gource-online.git",
+    "directory": "packages/protocol"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "playwright test -c playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

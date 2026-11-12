@@ -1,0 +1,235 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+/* F1: panel section "Contributors & AI" and the URL notices. Tokens and
+   control classes come from styles.css. */
+
+.ai-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ai-group,
+.ai-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ai-filter {
+  gap: 6px;
+}
+.ai-filter > legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.ai-group:disabled {
+  opacity: 0.5;
+}
+.ai-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ai-radio {
+  position: relative;
+  cursor: pointer;
+}
+.ai-radio input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.ai-radio span {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ai-radio input:checked + span {
+  border-color: transparent;
+  background: rgba(90, 169, 255, 0.22);
+  color: #d6e9ff;
+}
+.ai-radio input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ai-group:disabled .ai-radio,
+.ai-group:disabled .ai-radio input {
+  cursor: not-allowed;
+}
+.ai-hint {
+  margin: 0;
+}
+.ai-no-data {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+[data-control='ai-style'] .control-row {
+  grid-template-columns: auto 1fr;
+}
+.ai-rules-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.control .ai-preset {
+  max-width: 60%;
+  padding: 4px 8px;
+  font-size: 12.5px;
+}
+.ai-rules {
+  width: 100%;
+  font: 12.5px/1.5 var(--mono);
+  resize: vertical;
+}
+.ai-rules-error {
+  margin: 0;
+}
+.ai-length-hint {
+  margin: 0;
+  color: var(--orange);
+  font-size: 12px;
+}
+
+.ai-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.ai-stats-title {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ai-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ai-totals,
+.ai-empty {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.ai-totals-label {
+  display: inline-block;
+  min-width: 56px;
+  color: var(--muted);
+}
+.ai-agents {
+  width: 100%;
+  margin-top: 4px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.ai-agents th,
+.ai-agents td {
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+  text-align: right;
+  vertical-align: top;
+}
+.ai-agents thead th {
+  border-top: 0;
+  color: var(--muted);
+  font-weight: 500;
+}
+.ai-agents th:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+.ai-agents td {
+  width: 56px;
+  color: var(--text);
+}
+.ai-agent {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ai-swatch {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.ai-models {
+  display: block;
+  margin-left: 17px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+.ai-more td {
+  color: var(--muted);
+  text-align: left;
+}
+.ai-caveat {
+  margin: 0;
+  color: #6b7383;
+  font-size: 12px;
+}
+
+/* Notices of AI-74, top left under the title bar. */
+.ai-notices {
+  position: absolute;
+  z-index: 2;
+  top: 66px;
+  left: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: min(420px, calc(100% - 2 * var(--gutter)));
+  pointer-events: none;
+}
+.ai-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid rgba(242, 163, 58, 0.4);
+  border-radius: var(--radius);
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  color: #ffd9a3;
+  font-size: 13px;
+  pointer-events: auto;
+}
+.ai-notice .icon-btn {
+  width: 28px;
+  height: 28px;
+}
+@media (max-width: 640px) {
+  .ai-notices {
+    top: 12px;
+  }
+}

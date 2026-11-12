@@ -1,0 +1,14 @@
+name: Parity with Gource
+description: The port looks or behaves differently from C++ Gource
+labels: [parity]
+body:
+  - type: textarea
+    id: diff
+    attributes: { label: What differs, description: 'Screenshots of both if you can.' }
+    validations: { required: true }
+  - type: input
+    id: log
+    attributes: { label: Log or repository, description: 'A log under tests/logs/ or a public repository' }
+  - type: input
+    id: options
+    attributes: { label: Gource options used }

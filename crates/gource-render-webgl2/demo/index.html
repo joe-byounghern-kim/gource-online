@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebGL2 Backend Demo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #stats { position: fixed; left: 8px; top: 8px; margin: 0; color: #8f8; font: 12px monospace; }
+</style>
+</head>
+<body>
+<canvas id="gource"></canvas>
+<pre id="stats">loading…</pre>
+<script type="module">
+  import init, { start } from "./pkg/gource_render_webgl2_demo.js";
+
+  const stats = document.getElementById("stats");
+  try {
+    // The backend's glyph atlas draws with the "GourceSans" face.
+    const face = new FontFace("GourceSans", "url(../../../data/fonts/FreeSans.ttf)");
+    document.fonts.add(await face.load());
+    await init();
+    // ?bg=RRGGBB sets the clear colour (useful to inspect shadows).
+    // ?atlas=N precaches font sizes 8..N (atlas growth/reset test).
+    // ?lose=1 loses the WebGL context after 1 s and restores it after 2 s.
+    const params = new URLSearchParams(location.search);
+    const canvas = document.getElementById("gource");
+    start(canvas, stats, params.get("bg"), Number(params.get("atlas") || 0));
+    if (params.get("lose")) {
+      const ext = canvas.getContext("webgl2").getExtension("WEBGL_lose_context");
+      setTimeout(() => { ext.loseContext(); stats.dataset.lost = "1"; }, 1000);
+      setTimeout(() => { ext.restoreContext(); stats.dataset.restored = "1"; }, 2000);
+    }
+  } catch (e) {
+    stats.textContent = "error: " + e;
+    stats.dataset.ready = "error";
+    console.error(e);
+  }
+</script>
+</body>
+</html>

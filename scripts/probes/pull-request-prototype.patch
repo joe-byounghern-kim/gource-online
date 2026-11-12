@@ -1,0 +1,130 @@
+--- a/crates/gource-core/src/sim.rs
++++ b/crates/gource-core/src/sim.rs
+@@ -636,6 +636,32 @@
+ 
+     /// Mouse trace and frustum test against the current camera, then fill
+     /// `view` for rendering. Reuses `view`'s allocations.
++    /// M0 scratch-only: absolute paths in exactly the extracted FileView order.
++    pub fn probe_materialize(&mut self, paths:&[String]) {
++        for path in paths {
++            if let Some(file)=self.tree.find_file(path) { self.tree.set_file_hidden(file,false); }
++        }
++    }
++
++    pub fn probe_runtime(&self) -> f32 { self.runtime }
++
++    pub fn probe_file_paths(&self) -> Vec<String> {
++        if self.settings.hide_files { return Vec::new(); }
++        let mut out = Vec::new();
++        let mut stack = vec![self.tree.root()];
++        while let Some(d) = stack.pop() {
++            let node = &self.tree.dirs[d];
++            if node.in_frustum {
++                for &f in &node.files {
++                    let file = &self.tree.files[f];
++                    if !file.is_hidden() { out.push(file.fullpath.clone()); }
++                }
++            }
++            for &child in node.children.iter().rev() { stack.push(child); }
++        }
++        out
++    }
++
+     pub fn extract_view(&mut self, log: &EventLog, view: &mut SceneView) {
+         let _ = log;
+         self.extract(view);
+--- a/crates/gource-web/src/lib.rs
++++ b/crates/gource-web/src/lib.rs
+@@ -14,6 +14,7 @@
+ //! generic over the backend and the clock, so it builds and is tested
+ //! natively.
+ 
++pub mod probe;
+ pub mod ai;
+ pub mod engine;
+ pub mod input;
+--- a/crates/gource-web/src/engine.rs
++++ b/crates/gource-web/src/engine.rs
+@@ -131,6 +131,7 @@
+ 
+ /// `GourceApp` without the JavaScript bindings.
+ pub struct Engine<B: Backend, C: Clock> {
++    probe: crate::probe::Probe,
+     log: EventLog,
+     sim: Simulation,
+     view: SceneView,
+@@ -165,6 +166,7 @@
+ impl<B: Backend, C: Clock> Engine<B, C> {
+     pub fn new(backend: B, clock: C, settings: Settings) -> Self {
+         Engine {
++            probe: crate::probe::Probe::default(),
+             log: EventLog::new(),
+             sim: Simulation::new(settings),
+             view: SceneView::default(),
+@@ -344,8 +346,22 @@
+         let t2 = self.clock.now_ms();
+         self.draw(t0, t1, t2)
+     }
++
++    pub fn probe_load(&mut self, text: &str) -> Result<(), String> { self.probe.load(text) }
++    pub fn probe_report(&self) -> String { self.probe.report() }
++    pub fn probe_focus(&mut self, number:u32) { self.probe.focus(number); }
++    pub fn probe_variant(&mut self, variant: &str) { self.probe.variant(variant); }
+ 
+     fn build(&mut self, dt: f32) {
++        if self.probe.active() {
++            let now=self.sim.status(&self.log).current_time;
++            let runtime=self.sim.probe_runtime();
++            self.sim.probe_materialize(&self.probe.materialize_paths(now,runtime));
++            self.sim.extract_view(&self.log,&mut self.view);
++            let paths = self.sim.probe_file_paths();
++            let ordinary_bounds=FrameBuilder::probe_label_rects(&self.view,self.sim.settings(),self.backend.glyphs());
++            self.probe.apply(&mut self.view, &paths, now, runtime, &ordinary_bounds);
++        }
+         self.builder.build(
+             &self.view,
+             self.sim.settings(),
+--- a/crates/gource-web/src/wasm.rs
++++ b/crates/gource-web/src/wasm.rs
+@@ -89,6 +89,12 @@
+         engine.set_time_zone(Box::new(utc_offset_minutes_at));
+         Ok(GourceApp { engine })
+     }
++
++    /// M0 scratch-only opt-in. No browser/API credentials or remote acquisition.
++    pub fn probe_load(&mut self, text: &str) -> Result<(), JsError> { self.engine.probe_load(text).map_err(|e| JsError::new(&e)) }
++    pub fn probe_report(&self) -> String { self.engine.probe_report() }
++    pub fn probe_focus(&mut self, number:u32) { self.engine.probe_focus(number); }
++    pub fn probe_variant(&mut self, name: &str) { self.engine.probe_variant(name); }
+ 
+     // --- events ---
+ 
+--- a/crates/gource-render/src/builder.rs
++++ b/crates/gource-render/src/builder.rs
+@@ -170,6 +170,26 @@
+ }
+ 
+ impl FrameBuilder {
++    /// M0 scratch-only measurement of the same anchors and fonts used by draw_label.
++    pub fn probe_label_rects(view:&SceneView,settings:&Settings,glyphs:&mut dyn GlyphSource)->Vec<[f32;4]> {
++        let scale=if view.ui_scale>0.0 {view.ui_scale}else{1.0};
++        let fonts=Fonts::new(settings,scale,glyphs);
++        let project=|p:Vec2|view.camera.project(view.viewport,p.extend(0.0))/scale;
++        let mut out=Vec::new();
++        for label in &view.labels {
++            let hidden=match label.font {FontRole::DirName=>settings.hide_dirnames,FontRole::FileName=>settings.hide_filenames||settings.hide_files,FontRole::UserName=>settings.hide_usernames||settings.hide_users,_=>false};
++            if hidden||label.text.is_empty()||label.colour.w<=0.0 {continue;}
++            let font=fonts.get(label.font);let text=view.str(label.text);let width=font.width(glyphs,text);let height=font.max_height();
++            let pos=match label.anchor {
++                LabelAnchor::WorldTopLeft{pos}=>project(pos),
++                LabelAnchor::WorldCentredAbove{pos}=>{let p=project(pos);Vec2::new(p.x-width*0.5,p.y-height)},
++                LabelAnchor::Dir{dir}=>{let Some(d)=view.dirs.get(dir as usize) else{continue;};let Some(parent)=d.parent.and_then(|p|view.dirs.get(p as usize)) else{continue;};label_pos(project(parent.pos)*scale,project(d.pos)*scale,project(d.spos)*scale,settings.dir_name_position)/scale},
++            };
++            out.push([pos.x*scale-2.0,pos.y*scale-2.0,(pos.x+width)*scale+2.0,(pos.y+height)*scale+2.0]);
++        }
++        out
++    }
++
+     pub fn new() -> Self {
+         FrameBuilder::default()
+     }

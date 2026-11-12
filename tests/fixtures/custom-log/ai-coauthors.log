@@ -1,0 +1,15 @@
+1790942378|jane|A|/src/a.rs||ai=co:claude:Claude Opus 5.5
+1790942378|jane|A|/src/b.rs
+1790942400|bob|A|/README.md
+1790942500|Cursor Agent|A|/web/x.ts|ff8800|ai=au:cursor
+1790942500|Cursor Agent|A|/web/y.ts
+1790942600|dependabot[bot]|M|/Cargo.lock||bot=dependabot
+1790942700|jane|M|/src/a.rs||ai=co:claude:Claude Opus 5.5,co:codex
+1790942650|bob|M|/README.md
+1790942800|Jane|A|/py/y.py||ai=co:aider:gemini/gemini-3.1-pro-preview
+1790942900|jane|A|/py/z.py||ai=co:aider:ollama/llama3%3A8b
+1790942900|jane|M|/src/a.rs||ai=co:claude:Claude Sonnet 5
+1790943000|bob|M|/src/b.rs||more
+1790943100|bob|A|/src/c.rs||ai=zz:claude
+1790943200|jane|D|/src/b.rs||ai=co:claude:Claude%20Haiku 4.5;x-note=squash
+1790943300|Cursor Agent|M|/web/x.ts||ai=au:cursor

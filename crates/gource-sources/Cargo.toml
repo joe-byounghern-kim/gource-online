@@ -1,0 +1,12 @@
+[package]
+name = "gource-sources"
+description = "Input adapters that turn logs and project data (custom log, git raw log, issue and PR events) into the core event stream"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+gource-core = { workspace = true }

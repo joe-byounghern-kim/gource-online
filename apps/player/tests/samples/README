@@ -1,0 +1,36 @@
+Sample Gource custom logs, served by the player's test builds and dev server, e.g.
+/#src=/samples/file-removal.log
+
+file-removal.log is a copy of tests/logs/file-removal.log from Gource's own
+visual test scenarios (GPL-3.0-or-later, like the rest of this repository).
+
+ai-coauthors.log is this port's own sample (GPL-3.0-or-later) for the AI
+co-author decorations, /#src=/samples/ai-coauthors.log: four weeks of a
+small web project by four people, where jane is mostly assisted by Claude
+Opus 5.5, Marcus Lee sometimes by Claude Sonnet 5 or Haiku 4.5, priya by
+Codex, tom rarely by Cursor, and "Cursor Agent" authors commits itself.
+The credits are in the custom log's meta field
+(timestamp|user|A/M/D|/path||ai=co:claude:Claude Opus 5.5), which C++
+Gource ignores. The events are synthetic.
+
+pull-request-lifecycle.log is a synthetic manual-testing sample for the real
+WASM engine (GPL-3.0-or-later). It has ordinary code events alongside three
+initial proposals, all six new event kinds, distinct owner/reviewer/requester/
+merger actors, a requested reviewer, draft-to-ready, close/reopen, and original
+proposal ages. It is not provider evidence or a hosted acquisition test.
+Open:
+/#src=/samples/pull-request-lifecycle.log&o.pull-request-mode=full&o.pr-flow-hud=true&o.seconds-per-day=4&o.auto-skip-seconds=-1&o.stop-at-end=true
+
+Use Space to pause/play, seek with the timeline, inspect a proposal's hover,
+and toggle Pull requests in the display controls. Coverage deliberately says
+lifecycle complete, reviews partial and files unknown. The ordinary code M
+beside a merge is a code event, not an exact landed-file association receipt.
+
+pull-request-context-only.log contains only an initial open-state seed:
+/#src=/samples/pull-request-context-only.log&o.pr-flow-hud=true
+It should show the old proposal, but clicking Record video reports
+"No activity in this range" rather than fabricating a seed-only video.
+
+These samples are imported logs: no sign-in, paid grant, clone service, live
+GitHub API or mocked entitlement is required. Hosted rich acquisition and
+personal aggregation are not enabled by these local examples.

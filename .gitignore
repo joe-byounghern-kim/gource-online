@@ -1,0 +1,56 @@
+*.avi
+*.mpg
+*.mkv
+*.mp4
+gource-*.png
+.objs
+/gource
+/gource.exe
+gource.pro.user
+debug.log
+Makefile
+Makefile.in
+*.dll
+*.dll.a
+logs/*
+/aclocal.m4
+/autom4te.cache
+/configure
+/config.log
+/config.status
+/dev/win64
+/build-aux
+*.swp
+*.d
+.deps
+.dirstamp
+
+# Rust workspace
+/target/
+**/target/
+
+# Web host page
+/apps/player/assets/THIRD_PARTY_LICENSES.txt
+/node_modules/
+/packages/*/dist/
+/packages/*/build-test/
+/packages/*/node_modules/
+/packages/*/test-results/
+
+# local clone service cache
+/.cache/
+
+# local clone service state (sessions and sealed tokens)
+.state/
+
+# local agent state
+/.omc/
+
+# gource-mux test vectors
+!crates/gource-mux/tests/data/*.mp4
+
+# gource-online npm package: built by scripts/build-cli.sh
+/apps/cli/node_modules/
+/apps/cli/dist/
+/apps/cli/COPYING
+/apps/cli/*.tgz

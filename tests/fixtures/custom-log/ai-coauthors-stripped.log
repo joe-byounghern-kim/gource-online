@@ -1,0 +1,15 @@
+1790942378|jane|A|/src/a.rs
+1790942378|jane|A|/src/b.rs
+1790942400|bob|A|/README.md
+1790942500|Cursor Agent|A|/web/x.ts|ff8800
+1790942500|Cursor Agent|A|/web/y.ts
+1790942600|dependabot[bot]|M|/Cargo.lock
+1790942700|jane|M|/src/a.rs
+1790942650|bob|M|/README.md
+1790942800|Jane|A|/py/y.py
+1790942900|jane|A|/py/z.py
+1790942900|jane|M|/src/a.rs
+1790943000|bob|M|/src/b.rs
+1790943100|bob|A|/src/c.rs
+1790943200|jane|D|/src/b.rs
+1790943300|Cursor Agent|M|/web/x.ts

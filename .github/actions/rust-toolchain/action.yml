@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Rust toolchain
+description: >
+  rustup and the toolchain pinned in rust-toolchain.toml, on GitHub-hosted and
+  self-hosted runners. On a host whose gcc is older than 10 (Ubuntu 20.04, the
+  myoung34/github-runner default image) it installs gcc-10 and points CC/CXX at
+  it: gcc 9 miscompiles memcmp on arm64 (GCC bug 95189), so aws-lc-sys refuses
+  to build with it.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if ! command -v rustup >/dev/null; then
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.cargo/bin:$PATH"
+        fi
+        rustup toolchain install
+        if command -v gcc >/dev/null && [ "$(gcc -dumpversion | cut -d. -f1)" -lt 10 ]; then
+          if ! command -v gcc-10 >/dev/null || ! command -v g++-10 >/dev/null; then
+            sudo=; [ "$(id -u)" -eq 0 ] || sudo=sudo
+            $sudo apt-get update -qq
+            $sudo apt-get install -y -qq gcc-10 g++-10
+          fi
+          echo "CC=gcc-10" >> "$GITHUB_ENV"
+          echo "CXX=g++-10" >> "$GITHUB_ENV"
+        fi

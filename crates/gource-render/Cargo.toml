@@ -1,0 +1,14 @@
+[package]
+name = "gource-render"
+description = "Backend-agnostic renderer contract: batched vertex data, draw passes, textures and glyph atlas consumed by GPU backends"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+gource-core = { workspace = true }
+glam = { workspace = true }
+libm = { workspace = true }

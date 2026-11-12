@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Scanners we run on our own code first (design §5.6). CodeQL needs a public
+# repository (or GitHub Advanced Security). Skipped CodeQL is not passed coverage.
+# This job stays skipped while private. See docs/ci-readiness.md for the limits.
+name: Security
+
+on:
+  workflow_dispatch:
+    inputs:
+      fuzz_smoke:
+        description: Run a short fuzz check alongside audit
+        type: boolean
+        default: false
+  pull_request:
+  push:
+    branches: [main, web-mvp]
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+
+# Cancel obsolete runs only within the same event and pull request or branch.
+# A push or manual smoke must not cancel the full scheduled fuzz acceptance.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    if: ${{ github.event_name == 'schedule' || inputs.fuzz_smoke }}
+    runs-on: ${{ fromJSON((github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (vars.AZURE_RUNNER || vars.CI_RUNNER) || '"ubuntu-latest"') }}
+    # 60 minutes fuzzing plus 30 for toolchain, instrumented build and cleanup.
+    timeout-minutes: 90
+    env:
+      FUZZ_SECONDS: ${{ github.event_name == 'schedule' && '3600' || '15' }}
+      RUSTUP_TOOLCHAIN: nightly
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [git_raw, custom_log, pulls]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Runner allocation
+        run: |
+          df -h "$GITHUB_WORKSPACE"
+          for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max \
+            /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us \
+            /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+      - name: Nightly Rust toolchain
+        run: |
+          if ! command -v rustup >/dev/null; then
+            curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+            echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+            export PATH="$HOME/.cargo/bin:$PATH"
+          fi
+          rustup toolchain install nightly --profile minimal
+      - run: cargo install --locked cargo-fuzz
+      - run: mkdir -p fuzz/corpus && cp -R fuzz/seeds/. fuzz/corpus/
+      - run: cargo +nightly fuzz run '${{ matrix.target }}' -- -max_total_time="$FUZZ_SECONDS" -max_len=65536 -print_final_stats=1
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: fuzz-crash-${{ matrix.target }}
+          path: fuzz/artifacts/
+
+      - name: Peak runner memory
+        if: always()
+        run: |
+          for file in /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory/memory.max_usage_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+
+  codeql:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    strategy:
+      matrix:
+        language: [javascript-typescript, rust]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v3
+        with: { languages: '${{ matrix.language }}', build-mode: none }
+      - uses: github/codeql-action/analyze@v3
+
+  audit:
+    runs-on: ${{ fromJSON((github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (vars.AZURE_RUNNER || vars.CI_RUNNER) || '"ubuntu-latest"') }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Runner allocation
+        run: |
+          df -h "$GITHUB_WORKSPACE"
+          for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max \
+            /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us \
+            /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+      - uses: ./.github/actions/rust-toolchain
+      # A prebuilt binary instead of compiling cargo-audit on every run.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - run: cargo audit
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - uses: pnpm/action-setup@v6
+      - run: pnpm audit --prod
+      - name: Peak runner memory
+        if: always()
+        run: |
+          for file in /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory/memory.max_usage_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done

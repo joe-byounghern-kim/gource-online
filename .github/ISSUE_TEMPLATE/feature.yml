@@ -1,0 +1,8 @@
+name: Feature idea
+description: Suggest something new (or vote in Discussions → Ideas)
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: What would it let you do? }
+    validations: { required: true }

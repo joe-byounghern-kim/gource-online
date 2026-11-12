@@ -1,0 +1,31 @@
+[package]
+name = "gource-web"
+description = "Browser entry point: canvas, input, requestAnimationFrame loop and the JS-facing API"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+gource-core = { workspace = true }
+gource-sources = { workspace = true }
+gource-render = { workspace = true }
+gource-render-webgl2 = { workspace = true }
+gource-mux = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }
+web-sys = { workspace = true, features = [
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "Performance",
+    "Window",
+    "console",
+] }

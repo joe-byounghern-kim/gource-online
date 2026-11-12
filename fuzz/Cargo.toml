@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[package]
+name = "gource-parser-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+gource-sources = { path = "../crates/gource-sources" }
+
+# Keep the fuzz-only runtime out of production artifacts.
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "git_raw"
+path = "fuzz_targets/git_raw.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "custom_log"
+path = "fuzz_targets/custom_log.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pulls"
+path = "fuzz_targets/pulls.rs"
+test = false
+doc = false
+bench = false

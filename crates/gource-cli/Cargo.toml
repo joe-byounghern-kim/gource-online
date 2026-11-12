@@ -1,0 +1,18 @@
+[package]
+name = "gource-cli"
+description = "Native command-line runner for headless simulation, frame dumps and parity checks against the C++ reference"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "gource-rs"
+path = "src/main.rs"
+
+[dependencies]
+gource-core = { workspace = true }
+gource-render = { workspace = true }
+gource-sources = { workspace = true }

@@ -1,0 +1,11 @@
+[package]
+name = "gource-mux"
+description = "H.264 MP4 muxer (fragmented and faststart ISO BMFF) for the browser video export; no dependencies, no I/O"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]

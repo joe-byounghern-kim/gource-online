@@ -1,0 +1,38 @@
+{
+  "name": "gource-online",
+  "version": "0.2.0-beta.1",
+  "description": "Watch your git repository's history grow in the browser. Runs on your computer; nothing is uploaded.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "bin": {
+    "gource-online": "bin/gource-online.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "dist",
+    "COPYING"
+  ],
+  "engines": {
+    "node": ">=18.18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joe-byounghern-kim/gource-online.git",
+    "directory": "apps/cli"
+  },
+  "keywords": [
+    "gource",
+    "git",
+    "visualization",
+    "history"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

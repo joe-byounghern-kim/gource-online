@@ -1,0 +1,451 @@
+1788771600|tom|A|/package.json
+1788771600|tom|A|/tsconfig.json
+1788771600|tom|A|/.gitignore
+1788771600|tom|A|/docs/README.md
+1788771600|tom|A|/src/app/main.tsx
+1788771600|tom|A|/src/app/App.tsx
+1788771600|tom|A|/src/server/index.ts
+1788867416|priya|A|/src/shared/format.ts||ai=co:codex
+1788867416|priya|A|/tests/app.test.ts
+1788872045|priya|A|/src/server/cache.ts
+1788872045|priya|A|/src/app/components/Header.tsx
+1788872045|priya|A|/tests/auth.test.ts
+1788874233|Marcus Lee|A|/src/shared/types.ts
+1788878153|jane|A|/src/app/components/Sidebar.tsx||ai=co:claude:Claude Opus 5.5
+1788890355|priya|A|/tests/format.test.ts
+1788890355|priya|M|/tests/auth.test.ts
+1788890355|priya|M|/src/shared/types.ts
+1788946960|Marcus Lee|A|/tests/server.test.ts
+1788951348|priya|M|/src/shared/types.ts||ai=co:codex
+1788951348|priya|M|/tests/format.test.ts
+1788951348|priya|A|/src/shared/validate.ts
+1788951348|priya|A|/src/server/handlers/upload.ts
+1788961280|tom|A|/assets/logo.svg
+1788961280|tom|A|/docs/API.md
+1788961280|tom|A|/docs/ARCHITECTURE.md
+1788961280|tom|A|/assets/favicon.png
+1788961280|tom|M|/docs/README.md
+1788961280|tom|A|/scripts/deploy.sh
+1788961280|tom|A|/scripts/build.sh
+1788970668|priya|M|/src/shared/types.ts
+1788970852|jane|M|/tsconfig.json||ai=co:claude:Claude Opus 5.5
+1788970852|jane|M|/src/server/handlers/upload.ts
+1788970852|jane|M|/docs/API.md
+1788974262|Marcus Lee|M|/src/shared/validate.ts||ai=co:claude:Claude Sonnet 5
+1788974262|Marcus Lee|M|/src/shared/types.ts
+1788974587|jane|M|/src/app/App.tsx
+1788974587|jane|A|/src/app/theme.css
+1789035225|jane|M|/src/app/App.tsx
+1789035225|jane|A|/src/app/store.ts
+1789035225|jane|A|/src/app/hooks/useTheme.ts
+1789035225|jane|A|/src/app/hooks/useData.ts
+1789035225|jane|M|/src/app/theme.css
+1789035225|jane|A|/src/app/components/Chart.tsx
+1789035225|jane|A|/src/app/hooks/useAuth.ts
+1789051372|tom|M|/src/app/components/Chart.tsx
+1789052123|jane|M|/src/app/store.ts
+1789052123|jane|A|/src/app/components/Button.tsx
+1789052123|jane|M|/src/app/hooks/useAuth.ts
+1789052123|jane|M|/src/app/hooks/useData.ts
+1789052123|jane|M|/src/app/components/Header.tsx
+1789055254|jane|M|/src/shared/validate.ts
+1789055254|jane|M|/tests/auth.test.ts
+1789055254|jane|A|/assets/icons.svg
+1789055254|jane|M|/src/app/theme.css
+1789056688|Marcus Lee|M|/src/shared/format.ts||ai=co:claude:Claude Haiku 4.5
+1789056688|Marcus Lee|D|/tests/auth.test.ts
+1789056688|Marcus Lee|M|/docs/ARCHITECTURE.md
+1789061228|tom|M|/assets/logo.svg
+1789061228|tom|M|/docs/API.md
+1789061228|tom|M|/scripts/build.sh
+1789061228|tom|M|/scripts/deploy.sh
+1789061228|tom|M|/docs/README.md
+1789061228|tom|M|/assets/favicon.png
+1789061228|tom|M|/assets/icons.svg
+1789117725|jane|M|/src/app/hooks/useTheme.ts
+1789124765|tom|M|/docs/ARCHITECTURE.md||ai=co:cursor
+1789140155|jane|M|/src/app/components/Header.tsx||ai=co:claude:Claude Opus 5.5
+1789140155|jane|M|/src/app/App.tsx
+1789140155|jane|A|/src/app/routes.ts
+1789140155|jane|A|/src/app/components/Table.tsx
+1789144847|tom|M|/docs/ARCHITECTURE.md||ai=co:cursor
+1789211790|jane|A|/src/app/components/Modal.tsx||ai=co:claude:Claude Opus 5.5
+1789216909|jane|M|/src/app/components/Table.tsx||ai=co:claude:Claude Opus 5.5
+1789216909|jane|M|/src/app/App.tsx
+1789216909|jane|M|/src/app/theme.css
+1789226933|jane|M|/src/app/components/Sidebar.tsx||ai=co:claude:Claude Opus 5.5
+1789233710|tom|M|/assets/icons.svg
+1789233710|tom|M|/scripts/deploy.sh
+1789233710|tom|M|/docs/API.md
+1789294867|priya|M|/src/shared/format.ts||ai=co:codex
+1789294867|priya|M|/src/shared/types.ts
+1789294867|priya|A|/src/server/handlers/health.ts
+1789298072|Marcus Lee|A|/src/server/routes.ts
+1789301489|tom|A|/src/server/db.ts
+1789301489|tom|M|/src/app/components/Modal.tsx
+1789301489|tom|M|/docs/README.md
+1789310363|jane|M|/src/server/cache.ts
+1789310363|jane|A|/src/server/auth.ts
+1789312196|jane|A|/src/server/handlers/users.ts||ai=co:claude:Claude Opus 5.5
+1789312196|jane|M|/src/app/components/Modal.tsx
+1789316172|jane|M|/src/app/hooks/useTheme.ts||ai=co:claude:Claude Opus 5.5
+1789319238|jane|D|/src/app/hooks/useAuth.ts
+1789377434|tom|M|/assets/icons.svg
+1789377434|tom|M|/assets/favicon.png
+1789391411|priya|M|/src/shared/validate.ts
+1789398780|Cursor Agent|M|/tests/server.test.ts||ai=au:cursor
+1789398780|Cursor Agent|D|/src/app/components/Chart.tsx
+1789398780|Cursor Agent|M|/src/shared/validate.ts
+1789398780|Cursor Agent|M|/src/app/components/Button.tsx
+1789405155|priya|M|/tests/format.test.ts||ai=co:codex
+1789405155|priya|A|/src/server/handlers/reports.ts
+1789405155|priya|A|/tests/auth.test.ts
+1789405155|priya|M|/tests/app.test.ts
+1789405155|priya|M|/src/server/handlers/health.ts
+1789405155|priya|M|/tests/server.test.ts
+1789405155|priya|M|/src/shared/format.ts
+1789406002|priya|M|/src/shared/format.ts||ai=co:codex
+1789471546|jane|M|/src/app/components/Table.tsx||ai=co:claude:Claude Opus 5.5
+1789471546|jane|M|/src/app/components/Button.tsx
+1789471546|jane|M|/src/app/hooks/useData.ts
+1789471546|jane|M|/src/app/routes.ts
+1789471546|jane|M|/src/app/main.tsx
+1789477980|Cursor Agent|M|/src/shared/format.ts||ai=au:cursor
+1789477980|Cursor Agent|M|/src/app/components/Button.tsx
+1789477980|Cursor Agent|M|/src/app/components/Sidebar.tsx
+1789477980|Cursor Agent|M|/tests/auth.test.ts
+1789477980|Cursor Agent|M|/tests/app.test.ts
+1789477980|Cursor Agent|A|/src/app/components/Chart.tsx
+1789477980|Cursor Agent|M|/src/app/components/Table.tsx
+1789549644|jane|M|/src/app/App.tsx
+1789549644|jane|M|/src/app/components/Modal.tsx
+1789549644|jane|M|/src/app/components/Chart.tsx
+1789549644|jane|M|/src/app/main.tsx
+1789549644|jane|M|/src/app/store.ts
+1789549644|jane|M|/src/app/hooks/useTheme.ts
+1789549644|jane|M|/src/app/components/Button.tsx
+1789556529|jane|M|/src/app/components/Modal.tsx||ai=co:claude:Claude Opus 5.5
+1789556529|jane|M|/src/app/theme.css
+1789562116|tom|M|/scripts/build.sh
+1789562116|tom|M|/docs/README.md
+1789563257|jane|M|/src/app/routes.ts
+1789563257|jane|M|/src/app/components/Chart.tsx
+1789563257|jane|M|/src/app/components/Sidebar.tsx
+1789563961|priya|M|/tests/app.test.ts||ai=co:codex
+1789563961|priya|M|/src/server/handlers/health.ts
+1789563961|priya|M|/tests/auth.test.ts
+1789565005|Marcus Lee|M|/src/shared/format.ts||ai=co:claude:Claude Haiku 4.5
+1789565005|Marcus Lee|M|/src/shared/validate.ts
+1789565005|Marcus Lee|M|/src/server/db.ts
+1789571722|priya|M|/src/server/handlers/upload.ts
+1789574084|tom|M|/docs/README.md
+1789574084|tom|M|/scripts/build.sh
+1789576650|Marcus Lee|M|/src/shared/format.ts
+1789576650|Marcus Lee|M|/src/server/handlers/health.ts
+1789576650|Marcus Lee|M|/src/server/handlers/upload.ts
+1789576650|Marcus Lee|M|/src/server/handlers/reports.ts
+1789576650|Marcus Lee|M|/src/server/routes.ts
+1789577310|priya|D|/src/shared/types.ts||ai=co:codex
+1789577310|priya|M|/src/server/handlers/users.ts
+1789577310|priya|M|/src/server/handlers/health.ts
+1789577310|priya|M|/src/shared/format.ts
+1789645343|Cursor Agent|M|/src/shared/format.ts||ai=au:cursor
+1789645343|Cursor Agent|A|/src/shared/types.ts
+1789645343|Cursor Agent|M|/src/shared/validate.ts
+1789648001|jane|M|/src/app/hooks/useData.ts||ai=co:claude:Claude Opus 5.5
+1789648001|jane|M|/src/app/components/Modal.tsx
+1789648001|jane|M|/src/app/main.tsx
+1789648001|jane|M|/src/app/store.ts
+1789659243|tom|M|/docs/ARCHITECTURE.md
+1789659243|tom|M|/scripts/deploy.sh
+1789659243|tom|M|/docs/README.md
+1789661206|Marcus Lee|M|/src/server/handlers/reports.ts||ai=co:claude:Claude Sonnet 5
+1789661206|Marcus Lee|M|/src/shared/validate.ts
+1789663375|jane|M|/src/server/handlers/users.ts||ai=co:claude:Claude Opus 5.5
+1789663375|jane|M|/scripts/build.sh
+1789722904|priya|M|/tests/auth.test.ts
+1789722904|priya|M|/src/shared/types.ts
+1789722904|priya|M|/src/server/handlers/reports.ts
+1789728853|Marcus Lee|M|/src/shared/format.ts
+1789728853|Marcus Lee|M|/src/server/cache.ts
+1789728853|Marcus Lee|M|/src/shared/validate.ts
+1789728853|Marcus Lee|M|/src/server/index.ts
+1789730915|jane|M|/src/app/components/Header.tsx||ai=co:claude:Claude Opus 5.5
+1789730915|jane|M|/src/app/hooks/useData.ts
+1789730915|jane|M|/src/app/components/Table.tsx
+1789733809|priya|M|/src/server/handlers/upload.ts
+1789741185|tom|M|/src/app/theme.css
+1789741185|tom|M|/assets/icons.svg
+1789741185|tom|A|/src/app/hooks/useAuth.ts
+1789741553|priya|M|/docs/API.md
+1789741553|priya|M|/src/app/routes.ts
+1789741553|priya|M|/tests/format.test.ts
+1789741553|priya|M|/docs/ARCHITECTURE.md
+1789751219|Cursor Agent|M|/src/app/components/Table.tsx||ai=au:cursor
+1789751219|Cursor Agent|D|/tests/app.test.ts
+1789751219|Cursor Agent|M|/tests/format.test.ts
+1789808882|Marcus Lee|M|/src/server/cache.ts
+1789814283|priya|M|/src/server/handlers/reports.ts||ai=co:codex
+1789814283|priya|M|/src/server/handlers/health.ts
+1789814283|priya|M|/src/server/handlers/users.ts
+1789814283|priya|M|/tests/server.test.ts
+1789814283|priya|M|/src/shared/validate.ts
+1789816954|tom|M|/src/server/routes.ts
+1789816954|tom|A|/tests/app.test.ts
+1789820237|priya|M|/src/shared/types.ts||ai=co:codex
+1789821425|Cursor Agent|M|/tests/app.test.ts||ai=au:cursor
+1789821425|Cursor Agent|M|/src/app/components/Chart.tsx
+1789821569|priya|M|/src/server/handlers/users.ts
+1789821569|priya|M|/src/server/handlers/reports.ts
+1789821569|priya|M|/src/shared/format.ts
+1789821569|priya|M|/src/shared/validate.ts
+1789821569|priya|M|/src/server/handlers/upload.ts
+1789821569|priya|M|/tests/format.test.ts
+1789821569|priya|M|/tests/auth.test.ts
+1789821698|jane|M|/src/app/hooks/useAuth.ts
+1789821698|jane|M|/src/app/hooks/useTheme.ts
+1789840011|Marcus Lee|M|/src/server/auth.ts
+1789840011|Marcus Lee|M|/src/shared/format.ts
+1789900939|jane|M|/src/app/components/Chart.tsx||ai=co:claude:Claude Opus 5.5
+1789901458|Cursor Agent|M|/src/shared/types.ts||ai=au:cursor
+1789901458|Cursor Agent|M|/src/app/components/Chart.tsx
+1789901458|Cursor Agent|M|/src/shared/validate.ts
+1789901458|Cursor Agent|M|/tests/server.test.ts
+1789910185|priya|M|/src/shared/types.ts
+1789910185|priya|M|/tests/format.test.ts
+1789910185|priya|M|/tests/app.test.ts
+1789917483|Marcus Lee|M|/src/server/cache.ts
+1789917483|Marcus Lee|M|/src/server/auth.ts
+1789982008|tom|M|/src/app/hooks/useAuth.ts
+1789983578|priya|M|/src/server/routes.ts
+1789983578|priya|M|/src/server/index.ts
+1789993176|tom|M|/assets/icons.svg
+1789993176|tom|M|/assets/logo.svg
+1789993176|tom|D|/scripts/deploy.sh
+1789993176|tom|M|/assets/favicon.png
+1789993176|tom|D|/scripts/build.sh
+1789993176|tom|D|/docs/API.md
+1789993176|tom|M|/docs/README.md
+1789993604|Marcus Lee|M|/docs/README.md
+1789993604|Marcus Lee|M|/package.json
+1789993604|Marcus Lee|M|/src/server/db.ts
+1789994044|Marcus Lee|M|/tests/app.test.ts
+1789994044|Marcus Lee|M|/src/server/db.ts
+1789994044|Marcus Lee|M|/src/app/App.tsx
+1789994044|Marcus Lee|M|/assets/favicon.png
+1789994044|Marcus Lee|M|/src/shared/format.ts
+1789996698|jane|M|/src/app/components/Table.tsx||ai=co:claude:Claude Opus 5.5
+1789996698|jane|M|/src/app/components/Header.tsx
+1789996698|jane|M|/src/app/components/Chart.tsx
+1789997654|jane|M|/src/app/theme.css||ai=co:claude:Claude Opus 5.5
+1789997654|jane|M|/src/app/hooks/useData.ts
+1790001971|Marcus Lee|M|/src/server/cache.ts||ai=co:claude:Claude Sonnet 5
+1790068197|priya|M|/src/server/handlers/upload.ts
+1790068197|priya|M|/tests/format.test.ts
+1790069800|priya|M|/src/app/routes.ts||ai=co:codex
+1790069800|priya|M|/src/shared/types.ts
+1790069800|priya|M|/package.json
+1790069800|priya|M|/src/app/components/Header.tsx
+1790069800|priya|M|/docs/README.md
+1790076522|Marcus Lee|M|/src/server/handlers/health.ts
+1790076522|Marcus Lee|M|/src/shared/format.ts
+1790076522|Marcus Lee|D|/src/server/handlers/reports.ts
+1790077896|Marcus Lee|M|/src/shared/format.ts
+1790077896|Marcus Lee|A|/src/server/handlers/reports.ts
+1790077896|Marcus Lee|M|/src/server/db.ts
+1790078129|tom|A|/scripts/build.sh
+1790080502|Cursor Agent|M|/src/app/components/Header.tsx||ai=au:cursor
+1790080502|Cursor Agent|M|/src/shared/types.ts
+1790080502|Cursor Agent|M|/src/app/components/Button.tsx
+1790083821|Marcus Lee|M|/src/server/auth.ts||ai=co:claude:Claude Sonnet 5
+1790083821|Marcus Lee|M|/src/server/handlers/health.ts
+1790083821|Marcus Lee|M|/src/server/index.ts
+1790083821|Marcus Lee|M|/src/shared/format.ts
+1790083821|Marcus Lee|M|/src/server/handlers/upload.ts
+1790095506|priya|M|/src/server/handlers/users.ts
+1790095506|priya|M|/tests/server.test.ts
+1790095506|priya|M|/src/server/handlers/health.ts
+1790096435|jane|M|/src/app/components/Chart.tsx||ai=co:claude:Claude Opus 5.5
+1790165418|jane|M|/src/app/hooks/useData.ts
+1790165418|jane|M|/src/app/hooks/useAuth.ts
+1790165418|jane|M|/src/app/theme.css
+1790165418|jane|M|/src/app/components/Sidebar.tsx
+1790165418|jane|M|/src/app/hooks/useTheme.ts
+1790165418|jane|M|/src/app/components/Table.tsx
+1790165418|jane|M|/src/app/routes.ts
+1790170898|tom|M|/docs/ARCHITECTURE.md||ai=co:cursor
+1790170898|tom|A|/scripts/deploy.sh
+1790170898|tom|M|/docs/README.md
+1790173412|jane|M|/src/app/hooks/useTheme.ts
+1790173412|jane|M|/src/app/hooks/useAuth.ts
+1790173412|jane|M|/src/app/components/Modal.tsx
+1790173412|jane|M|/src/app/components/Sidebar.tsx
+1790173412|jane|M|/src/app/components/Table.tsx
+1790173412|jane|M|/src/app/components/Chart.tsx
+1790173412|jane|M|/src/app/store.ts
+1790174361|priya|M|/assets/icons.svg||ai=co:codex
+1790174361|priya|M|/src/server/cache.ts
+1790180739|jane|M|/src/app/components/Sidebar.tsx
+1790180739|jane|M|/src/app/components/Table.tsx
+1790180739|jane|M|/src/app/App.tsx
+1790180739|jane|M|/src/app/components/Header.tsx
+1790183983|Cursor Agent|M|/tests/auth.test.ts||ai=au:cursor
+1790183983|Cursor Agent|M|/tests/server.test.ts
+1790246400|tom|M|/tests/format.test.ts||ai=co:cursor
+1790246400|tom|M|/src/app/components/Modal.tsx
+1790246851|Cursor Agent|M|/src/shared/format.ts||ai=au:cursor
+1790246851|Cursor Agent|M|/src/app/components/Header.tsx
+1790246851|Cursor Agent|M|/src/app/components/Sidebar.tsx
+1790256106|tom|M|/docs/ARCHITECTURE.md||ai=co:cursor
+1790256106|tom|M|/assets/favicon.png
+1790256106|tom|M|/scripts/build.sh
+1790256106|tom|A|/docs/API.md
+1790256106|tom|M|/scripts/deploy.sh
+1790256422|jane|M|/src/app/main.tsx||ai=co:claude:Claude Opus 5.5
+1790256422|jane|M|/src/app/hooks/useData.ts
+1790256422|jane|M|/src/app/routes.ts
+1790271591|Marcus Lee|D|/src/server/handlers/health.ts||ai=co:claude:Claude Haiku 4.5
+1790271591|Marcus Lee|M|/src/server/handlers/upload.ts
+1790333272|jane|M|/src/app/components/Button.tsx
+1790333272|jane|M|/src/app/App.tsx
+1790333272|jane|M|/src/app/theme.css
+1790333272|jane|M|/src/app/main.tsx
+1790358243|jane|M|/src/app/components/Modal.tsx
+1790418482|tom|M|/docs/ARCHITECTURE.md
+1790419168|Marcus Lee|M|/src/shared/format.ts||ai=co:claude:Claude Haiku 4.5
+1790419168|Marcus Lee|M|/src/server/handlers/reports.ts
+1790419168|Marcus Lee|M|/src/shared/types.ts
+1790419168|Marcus Lee|M|/src/server/handlers/users.ts
+1790419168|Marcus Lee|M|/src/shared/validate.ts
+1790422160|Marcus Lee|M|/src/server/cache.ts
+1790422160|Marcus Lee|M|/src/server/handlers/upload.ts
+1790422160|Marcus Lee|M|/src/server/routes.ts
+1790424316|priya|M|/tests/auth.test.ts||ai=co:codex
+1790424316|priya|A|/src/server/handlers/health.ts
+1790424316|priya|M|/src/server/handlers/upload.ts
+1790428910|tom|M|/src/server/cache.ts
+1790428910|tom|M|/assets/icons.svg
+1790429686|priya|M|/tests/app.test.ts||ai=co:codex
+1790429783|Cursor Agent|M|/src/shared/validate.ts||ai=au:cursor
+1790429783|Cursor Agent|M|/src/app/components/Modal.tsx
+1790439243|priya|M|/tests/server.test.ts||ai=co:codex
+1790439243|priya|M|/docs/README.md
+1790439243|priya|M|/src/app/components/Chart.tsx
+1790439243|priya|M|/src/shared/types.ts
+1790439243|priya|D|/tests/app.test.ts
+1790445568|priya|M|/tests/auth.test.ts
+1790445568|priya|A|/tests/app.test.ts
+1790445568|priya|M|/src/server/handlers/reports.ts
+1790445568|priya|M|/tests/server.test.ts
+1790445568|priya|M|/src/shared/validate.ts
+1790445568|priya|M|/src/server/handlers/upload.ts
+1790445568|priya|M|/src/server/handlers/health.ts
+1790501980|tom|M|/scripts/deploy.sh
+1790501980|tom|M|/assets/icons.svg
+1790501980|tom|M|/assets/favicon.png
+1790510188|Marcus Lee|M|/docs/API.md||ai=co:claude:Claude Haiku 4.5
+1790510188|Marcus Lee|M|/src/shared/format.ts
+1790510188|Marcus Lee|M|/assets/logo.svg
+1790514479|jane|M|/src/app/App.tsx||ai=co:claude:Claude Opus 5.5
+1790525645|Cursor Agent|D|/scripts/deploy.sh||ai=au:cursor
+1790529001|jane|M|/src/app/components/Table.tsx
+1790586175|priya|M|/src/server/handlers/upload.ts||ai=co:codex
+1790586175|priya|M|/src/shared/format.ts
+1790586175|priya|M|/src/shared/types.ts
+1790586175|priya|M|/src/server/handlers/users.ts
+1790586175|priya|M|/tests/format.test.ts
+1790589587|jane|M|/src/app/components/Sidebar.tsx
+1790599455|Marcus Lee|M|/src/shared/validate.ts
+1790599455|Marcus Lee|M|/src/server/handlers/reports.ts
+1790599455|Marcus Lee|M|/src/server/handlers/upload.ts
+1790606282|Marcus Lee|M|/src/server/routes.ts||ai=co:claude:Claude Haiku 4.5
+1790606282|Marcus Lee|M|/src/server/handlers/health.ts
+1790606467|Marcus Lee|M|/src/server/index.ts||ai=co:claude:Claude Sonnet 5
+1790611121|tom|M|/assets/logo.svg
+1790611121|tom|A|/scripts/deploy.sh
+1790611121|tom|M|/scripts/build.sh
+1790611121|tom|M|/docs/ARCHITECTURE.md
+1790611121|tom|M|/docs/API.md
+1790611501|priya|M|/src/server/handlers/health.ts
+1790676185|jane|M|/src/app/store.ts
+1790676481|Cursor Agent|M|/tests/server.test.ts||ai=au:cursor
+1790676481|Cursor Agent|M|/tests/format.test.ts
+1790676762|Marcus Lee|M|/src/server/index.ts||ai=co:claude:Claude Haiku 4.5
+1790680737|jane|M|/src/app/components/Table.tsx
+1790680737|jane|M|/src/app/hooks/useData.ts
+1790680737|jane|M|/src/app/components/Chart.tsx
+1790680737|jane|M|/src/app/App.tsx
+1790680737|jane|M|/src/app/components/Sidebar.tsx
+1790680737|jane|M|/src/app/components/Modal.tsx
+1790680737|jane|D|/src/app/components/Button.tsx
+1790682368|tom|M|/docs/ARCHITECTURE.md
+1790682368|tom|M|/scripts/build.sh
+1790682368|tom|M|/assets/logo.svg
+1790687142|jane|M|/package.json
+1790698418|Marcus Lee|M|/src/server/handlers/reports.ts
+1790699920|Marcus Lee|M|/src/server/handlers/health.ts||ai=co:claude:Claude Sonnet 5
+1790699920|Marcus Lee|D|/src/server/cache.ts
+1790699920|Marcus Lee|M|/src/server/handlers/users.ts
+1790699920|Marcus Lee|M|/src/server/db.ts
+1790699920|Marcus Lee|M|/src/shared/format.ts
+1790699920|Marcus Lee|M|/src/server/routes.ts
+1790699920|Marcus Lee|M|/src/shared/validate.ts
+1790699951|priya|M|/src/shared/types.ts
+1790699951|priya|D|/src/shared/format.ts
+1790699951|priya|D|/assets/icons.svg
+1790701036|jane|M|/src/app/hooks/useData.ts||ai=co:claude:Claude Opus 5.5
+1790759327|Marcus Lee|M|/src/server/routes.ts
+1790759327|Marcus Lee|M|/src/server/handlers/reports.ts
+1790759327|Marcus Lee|M|/src/server/handlers/upload.ts
+1790772790|Marcus Lee|M|/src/server/handlers/reports.ts
+1790772790|Marcus Lee|M|/src/server/handlers/upload.ts
+1790772790|Marcus Lee|M|/src/server/handlers/users.ts
+1790776414|jane|M|/src/app/store.ts
+1790785643|tom|M|/src/shared/validate.ts
+1790785643|tom|M|/src/app/components/Sidebar.tsx
+1790861624|Marcus Lee|M|/src/server/routes.ts
+1790861624|Marcus Lee|M|/src/server/db.ts
+1790869630|Cursor Agent|M|/src/shared/validate.ts||ai=au:cursor
+1790869630|Cursor Agent|A|/src/shared/format.ts
+1790870729|priya|M|/src/shared/validate.ts
+1790870729|priya|M|/tests/auth.test.ts
+1790870729|priya|M|/src/server/handlers/upload.ts
+1790872620|Cursor Agent|M|/assets/favicon.png||ai=au:cursor
+1790872715|tom|M|/docs/README.md
+1790872715|tom|M|/docs/API.md
+1790872715|tom|D|/docs/ARCHITECTURE.md
+1790872715|tom|A|/assets/icons.svg
+1790873136|priya|M|/tests/server.test.ts||ai=co:codex
+1790873136|priya|M|/src/server/handlers/health.ts
+1790873136|priya|M|/src/server/handlers/upload.ts
+1790873136|priya|M|/tests/format.test.ts
+1790873136|priya|M|/tests/auth.test.ts
+1790873136|priya|M|/src/shared/format.ts
+1790873136|priya|M|/tests/app.test.ts
+1790875839|tom|M|/docs/API.md||ai=co:cursor
+1790875839|tom|M|/scripts/build.sh
+1790875839|tom|M|/assets/icons.svg
+1790932756|tom|M|/tests/server.test.ts
+1790932756|tom|M|/tests/auth.test.ts
+1790935803|jane|M|/src/app/components/Modal.tsx||ai=co:claude:Claude Opus 5.5
+1790935803|jane|M|/src/app/hooks/useAuth.ts
+1790935803|jane|M|/src/app/components/Header.tsx
+1790943052|Marcus Lee|M|/src/server/handlers/reports.ts||ai=co:claude:Claude Haiku 4.5
+1790943052|Marcus Lee|M|/src/shared/types.ts
+1790943052|Marcus Lee|M|/src/server/routes.ts
+1790943052|Marcus Lee|M|/src/shared/validate.ts
+1790943052|Marcus Lee|M|/src/server/handlers/users.ts
+1790943611|Marcus Lee|M|/src/server/routes.ts
+1790943738|Cursor Agent|M|/tsconfig.json||ai=au:cursor
+1790947719|priya|M|/src/server/handlers/reports.ts
+1790947719|priya|M|/tests/app.test.ts
+1790950595|Cursor Agent|M|/tests/auth.test.ts||ai=au:cursor
+1790950595|Cursor Agent|M|/docs/API.md
+1790950595|Cursor Agent|M|/package.json
+1790952526|Marcus Lee|M|/src/server/index.ts||ai=co:claude:Claude Haiku 4.5
+1790952526|Marcus Lee|M|/src/server/routes.ts
+1790952526|Marcus Lee|M|/src/server/handlers/users.ts
+1790952526|Marcus Lee|M|/src/server/handlers/reports.ts
+1790952526|Marcus Lee|M|/src/server/handlers/health.ts
+1790952526|Marcus Lee|M|/src/server/db.ts
+1790952526|Marcus Lee|M|/src/shared/validate.ts

@@ -1,0 +1,154 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, web-mvp]
+
+permissions:
+  contents: read
+
+# Cancel obsolete runs for the same pull request or branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Trusted private jobs prefer AZURE_RUNNER, with CI_RUNNER as the local fallback.
+# Public repositories and fork PRs always use GitHub-hosted runners.
+jobs:
+  rust:
+    runs-on: ${{ fromJSON((github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (vars.AZURE_RUNNER || vars.CI_RUNNER) || '"ubuntu-latest"') }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Runner allocation
+        run: |
+          df -h "$GITHUB_WORKSPACE"
+          for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max \
+            /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us \
+            /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+      - uses: ./.github/actions/rust-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo clippy -p gource-web --target wasm32-unknown-unknown --locked -- -D warnings
+      - run: cargo test --workspace --locked
+      - name: Peak runner memory
+        if: always()
+        run: |
+          for file in /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory/memory.max_usage_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+
+  # The E2E suite is split across two shards that run in parallel; shard 1
+  # also runs the checks that need no browser.
+  web:
+    runs-on: ${{ fromJSON((github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (vars.AZURE_RUNNER || vars.CI_RUNNER) || '"ubuntu-latest"') }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Runner allocation
+        run: |
+          df -h "$GITHUB_WORKSPACE"
+          for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max \
+            /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us \
+            /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+      - uses: ./.github/actions/rust-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - name: wasm-bindgen version (the one in Cargo.lock)
+        id: wasm-bindgen
+        run: echo "version=$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' Cargo.lock)" >> "$GITHUB_OUTPUT"
+      # A prebuilt binary; compiling wasm-bindgen-cli took over two minutes.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@${{ steps.wasm-bindgen.outputs.version }}
+      # pnpm's npm bootstrap needs a modern Node on PATH on self-hosted runners.
+      # Initialize it without caching, then enable pnpm caching after installation.
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - if: matrix.shard == 1
+        run: node scripts/check-versions.mjs
+      - if: matrix.shard == 1
+        run: bash scripts/check-spdx.sh
+      - if: matrix.shard == 1
+        run: node --test scripts/*.test.mjs
+      - run: scripts/build-web.sh --release
+      # The E2E app imports the built workspace packages; shard 1 would get
+      # them from typecheck, but shard 2 skips it.
+      - run: pnpm run build:packages
+      - if: matrix.shard == 1
+        run: pnpm run typecheck
+      - if: matrix.shard == 1
+        run: pnpm run test
+      - if: matrix.shard == 1
+        run: pnpm -C apps/player build
+      # Playwright's own Chromium, not Google Chrome: there is no Chrome for
+      # Linux arm64 (the self-hosted runner). Local runs keep using Chrome.
+      # Playwright ships no Chromium for Ubuntu 20.04 on arm64 (the
+      # myoung34/github-runner default image), so there CI installs its
+      # Ubuntu 22.04 arm64 build, and the system libraries that build needs
+      # (Playwright's 22.04 list, all available on 20.04) without the fonts
+      # 20.04 lacks. A runner on a 22.04 or 24.04 image needs none of this.
+      - name: Playwright Chromium
+        run: |
+          if [ "$(uname -m)" = aarch64 ] && grep -q '^VERSION_ID="20.04"' /etc/os-release; then
+            export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu22.04-arm64
+            echo "PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=$PLAYWRIGHT_HOST_PLATFORM_OVERRIDE" >> "$GITHUB_ENV"
+            sudo=; [ "$(id -u)" -eq 0 ] || sudo=sudo
+            $sudo apt-get update -qq
+            $sudo apt-get install -y -qq --no-install-recommends \
+              libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcairo2 libcups2 \
+              libdbus-1-3 libdrm2 libgbm1 libglib2.0-0 libnspr4 libnss3 libpango-1.0-0 \
+              libwayland-client0 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6 \
+              libxfixes3 libxkbcommon0 libxrandr2 libfontconfig1 libfreetype6 \
+              fonts-liberation fonts-noto-color-emoji fonts-freefont-ttf
+            pnpm -C apps/player exec playwright install --no-shell chromium
+          elif [ "${PLAYWRIGHT_SYSTEM_DEPS_PREINSTALLED:-}" = 1 ]; then
+            pnpm -C apps/player exec playwright install --no-shell chromium
+          else
+            pnpm -C apps/player exec playwright install --with-deps --no-shell chromium
+          fi
+      # The real-engine project runs after the default project, never alongside it. SwiftShader renders WebGL on the
+      # CPU, and with the default workers competing, the GPU process main thread queued WebGL2 context creation
+      # behind multi-second compositor swaps until the first viewer check missed (#58, traced in #71).
+      - run: pnpm -C apps/player test:e2e --shard=${{ matrix.shard }}/2 --project=default --output=test-results/default
+        env: { E2E_CHANNEL: chromium }
+      - if: success() || failure()
+        run: pnpm -C apps/player test:e2e --shard=${{ matrix.shard }}/2 --project=real-webgl --output=test-results/real-webgl
+        env: { E2E_CHANNEL: chromium }
+      # A failed test keeps its Playwright trace (retain-on-failure). Each run clears only its own output folder.
+      # Keep the traces a week to diagnose CI-only failures (#113).
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-traces-${{ matrix.shard }}
+          path: apps/player/test-results/
+          # A step before the browser tests can fail too. Then there are no traces, and that is not a second problem.
+          if-no-files-found: ignore
+          retention-days: 7
+      - if: matrix.shard == 1
+        run: scripts/build-cli.sh --pack
+      # The packed npm package end to end: npx in a fresh repository, the release player and the real engine (#124).
+      - if: matrix.shard == 1
+        run: pnpm -C apps/player test:e2e tests/cli-real.spec.ts --project=default --output=test-results/cli
+        env: { E2E_CLI: '1', E2E_CHANNEL: chromium }
+      - name: Peak runner memory
+        if: always()
+        run: |
+          for file in /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory/memory.max_usage_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done

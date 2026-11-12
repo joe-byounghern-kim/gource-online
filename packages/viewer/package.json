@@ -1,0 +1,27 @@
+{
+  "name": "@gource-online/viewer",
+  "private": true,
+  "version": "0.2.0-beta.1",
+  "description": "Gource's renderer as a custom element, <gource-viewer>: the WebAssembly engine, the log parser worker and the canvas",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": ["./src/element.ts", "./src/index.ts"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./options": "./src/options.ts",
+    "./engine/mock": "./src/engine/mock.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joe-byounghern-kim/gource-online.git",
+    "directory": "packages/viewer"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

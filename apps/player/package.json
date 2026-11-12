@@ -1,0 +1,43 @@
+{
+  "name": "gource-player",
+  "private": true,
+  "version": "0.2.0-beta.1",
+  "description": "The standalone Gource player (viewer.gource.online): playback, options, recording and AI statistics",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css",
+    "./src/main.ts"
+  ],
+  "exports": {
+    "./dom": "./src/dom.ts",
+    "./errors": "./src/errors.ts",
+    "./format": "./src/format.ts",
+    "./host": "./src/host.ts",
+    "./links": "./src/links.ts",
+    "./playback": "./src/playback.ts",
+    "./pr-mode": "./src/pr-mode.ts",
+    "./screens/viewer": "./src/screens/viewer.ts",
+    "./ai/*": "./src/ai/*.ts",
+    "./record/*": "./src/record/*.ts",
+    "./styles/*.css": "./src/styles/*.css"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "test": "playwright test -c playwright.unit.config.ts",
+    "test:e2e": "playwright test -c playwright.config.ts"
+  },
+  "dependencies": {
+    "@gource-online/protocol": "workspace:*",
+    "@gource-online/viewer": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}
