@@ -1,7 +1,7 @@
 {
   "name": "gource-player",
   "private": true,
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "description": "The standalone Gource player (viewer.gource.online): playback, options, recording and AI statistics",
   "license": "GPL-3.0-or-later",
   "type": "module",

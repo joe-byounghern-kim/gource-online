@@ -1,7 +1,7 @@
 {
   "name": "@gource-online/viewer",
   "private": true,
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "description": "Gource's renderer as a custom element, <gource-viewer>: the WebAssembly engine, the log parser worker and the canvas",
   "license": "GPL-3.0-or-later",
   "type": "module",

@@ -90,7 +90,7 @@ dependencies = [
 
 [[package]]
 name = "gource-cli"
-version = "0.2.0-beta.1"
+version = "0.2.0-beta.2"
 dependencies = [
  "gource-core",
  "gource-render",
@@ -99,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "gource-core"
-version = "0.2.0-beta.1"
+version = "0.2.0-beta.2"
 dependencies = [
  "glam",
  "libm",
@@ -108,11 +108,11 @@ dependencies = [
 
 [[package]]
 name = "gource-mux"
-version = "0.2.0-beta.1"
+version = "0.2.0-beta.2"
 
 [[package]]
 name = "gource-render"
-version = "0.2.0-beta.1"
+version = "0.2.0-beta.2"
 dependencies = [
  "glam",
  "gource-core",
@@ -121,7 +121,7 @@ dependencies = [
 
 [[package]]
 name = "gource-render-webgl2"
-version = "0.2.0-beta.1"
+version = "0.2.0-beta.2"
 dependencies = [
  "gource-render",
  "js-sys",
@@ -132,14 +132,14 @@ dependencies = [
 
 [[package]]
 name = "gource-sources"
-version = "0.2.0-beta.1"
+version = "0.2.0-beta.2"
 dependencies = [
  "gource-core",
 ]
 
 [[package]]
 name = "gource-web"
-version = "0.2.0-beta.1"
+version = "0.2.0-beta.2"
 dependencies = [
  "gource-core",
  "gource-mux",
