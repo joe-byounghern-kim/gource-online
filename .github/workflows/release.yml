@@ -4,8 +4,9 @@
 # player-dist.tar.gz, static gource-rs binaries and their checksums, with build
 # provenance; @gource-online/protocol and gource-online on npm (dist-tag
 # beta for pre-releases); a GitHub Release. workflow_dispatch with
-# dry_run=true builds everything and stops before publishing (works in a
-# private repository, where attestations are not available).
+# dry_run=true builds everything, runs the npm publish command with --dry-run
+# and stops before publishing (works in a private repository, where
+# attestations are not available).
 #
 # Before the first release: npm trusted publishing for this repository and
 # this workflow file, for both packages.
@@ -103,9 +104,23 @@ jobs:
             apps/cli/gource-online-*.tgz
             gource-online-protocol-*.tgz
 
+  # Every run, a dry run included: the same artifacts, npm and command as the publish job, with
+  # --dry-run. A broken publish command fails here, before the tag or the approval.
+  publish-check:
+    needs: [gource-rs, player]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with: { path: out, merge-multiple: true }
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - run: npm install -g npm@^11.5.1
+      - run: scripts/publish-npm.sh out "${{ needs.player.outputs.version }}" --dry-run
+
   publish:
     if: ${{ github.event_name == 'push' || !inputs.dry_run }}
-    needs: [gource-rs, player]
+    needs: [gource-rs, player, publish-check]
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -126,11 +141,7 @@ jobs:
         with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
       - run: npm install -g npm@^11.5.1
       - name: npm (provenance; beta dist-tag for pre-releases)
-        run: |
-          tag=latest; case "${{ needs.player.outputs.version }}" in *-*) tag=beta;; esac
-          npm publish out/gource-online-protocol-*.tgz --provenance --access public --tag "$tag"
-          # upload-artifact keeps paths relative to the repository root.
-          npm publish out/apps/cli/gource-online-*.tgz --provenance --access public --tag "$tag"
+        run: scripts/publish-npm.sh out "${{ needs.player.outputs.version }}"
       - name: GitHub Release
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |

@@ -21,6 +21,12 @@ test('protocol pack lands at the root consumed by upload and publish', () => {
     const dest = destination === '"$GITHUB_WORKSPACE"' ? root : destination;
     execFileSync('pnpm', ['-C', dir, 'pack', '--pack-destination', dest], { cwd: root, stdio: 'pipe' });
     assert.ok(existsSync(join(root, `gource-online-protocol-${version}.tgz`)), 'protocol tarball must be at the upload root, not inside packages/protocol');
-    assert.match(workflow, /out\/gource-online-protocol-\*\.tgz/);
+    // Both the dry-run check and the publish job hand the download root to one script, which names the tarball there.
+    assert.match(workflow, /scripts\/publish-npm\.sh out "[^"\n]+" --dry-run\n/);
+    assert.match(workflow, /run: scripts\/publish-npm\.sh out "[^"\n]+"\n/);
+    const publish = readFileSync(new URL('./publish-npm.sh', import.meta.url), 'utf8');
+    assert.match(publish, /protocol="\$dir\/gource-online-protocol-\$version\.tgz"/);
+    // npm reads a bare "out/name.tgz" as a GitHub shorthand: the script must make the directory absolute.
+    assert.match(publish, /dir=\$\(cd "\$dir" && pwd\)/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

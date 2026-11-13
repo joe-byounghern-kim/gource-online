@@ -1,6 +1,6 @@
 {
   "name": "@gource-online/protocol",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "description": "The shared contract of Gource Online: repository URL rules, the clone service API types, feature ids and Gource's git log command",
   "license": "MIT",
   "type": "module",
