@@ -168,3 +168,14 @@ test('subdirectory validation', () => {
   expect(validateSubdir('a\\b')).not.toBeNull();
   expect(normaliseSubdir(' /src/core/ ')).toBe('src/core');
 });
+
+test('a long run of slashes or ./ prefixes takes linear time', () => {
+  const run = '/'.repeat(200_000);
+  const started = performance.now();
+  expect(normaliseSubdir(`a${run}a`)).toBe(`a${run}a`);
+  expect(normaliseSubdir(`${run}a${run}`)).toBe('a');
+  expect(normaliseSubdir(`${'./'.repeat(100_000)}src/`)).toBe('src');
+  expect(validateSubdir(`a${run}a`)).toBe('The subdirectory path is too long.');
+  // Quadratic took seconds at 64,000 slashes; linear takes milliseconds at 200,000.
+  expect(performance.now() - started).toBeLessThan(500);
+});

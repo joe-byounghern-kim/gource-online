@@ -196,3 +196,50 @@ test('private access status is a bounded count and nothing else', () => {
   for (const value of [null, [], {}, { installations: -1 }, { installations: 11 }, { installations: 1.5 }, { installations: '1' },
     { installations: 1, names: ['org'] }, { installations: 1, installation_id: 3 }]) expect(readPrivateAccessStatus(value)).toBeNull();
 });
+
+test('private repository list copies names and display hints only, one per name, at most 100', () => {
+  const { readPrivateRepositoryList, MAX_PRIVATE_REPOSITORY_LIST } = protocol;
+  expect(MAX_PRIVATE_REPOSITORY_LIST).toBe(100);
+  const entry = { name: 'org/secret', visibility: 'private', owner: 'organization', fork: false, pushed_at: '2026-11-10T00:00:00Z' };
+  const input = { repositories: [entry, { name: 'me/tool', visibility: 'internal', owner: 'personal', fork: true, pushed_at: null }], truncated: false };
+  const list = readPrivateRepositoryList(input);
+  expect(list).toEqual(input);
+  expect(Object.isFrozen(list)).toBe(true);
+  expect(Object.isFrozen(list!.repositories)).toBe(true);
+  expect(Object.isFrozen(list!.repositories[0])).toBe(true);
+  entry.name = 'org/changed';
+  expect(list!.repositories[0]!.name).toBe('org/secret');
+  // Unknown fields, ids of any kind among them, never propagate.
+  const extra = readPrivateRepositoryList({ repositories: [{ ...input.repositories[1], id: 42, installation_id: 7, node_id: 'R_x' }], truncated: true, account_id: 3 });
+  expect(extra).toEqual({ repositories: [input.repositories[1]], truncated: true });
+  expect(readPrivateRepositoryList({ repositories: [], truncated: false })).toEqual({ repositories: [], truncated: false });
+  // GitHub's own spelling is kept: case, and a repository whose name ends in a literal `.git`.
+  for (const name of ['Org/Repo', 'org/tool.git', 'org/.github']) {
+    expect(readPrivateRepositoryList({ repositories: [{ ...input.repositories[1], name }], truncated: false })!.repositories[0]!.name).toBe(name);
+  }
+  const many = Array.from({ length: 100 }, (_, i) => ({ name: `org/r${i}`, visibility: 'private', owner: 'organization', fork: false, pushed_at: null }));
+  expect(readPrivateRepositoryList({ repositories: many, truncated: true })!.repositories).toHaveLength(100);
+});
+
+test('private repository list refuses anything outside the contract', () => {
+  const { readPrivateRepositoryList } = protocol;
+  const ok = { name: 'org/secret', visibility: 'private', owner: 'organization', fork: false, pushed_at: '2026-11-10T00:00:00.000Z' };
+  const many = Array.from({ length: 101 }, (_, i) => ({ ...ok, name: `org/r${i}` }));
+  for (const value of [
+    null, [], {}, { repositories: [] }, { repositories: [], truncated: 'no' }, { repositories: {}, truncated: false },
+    { repositories: many, truncated: true },
+    { repositories: [ok, { ...ok, name: 'ORG/Secret' }], truncated: false },
+    { repositories: [{ ...ok, visibility: 'public' }], truncated: false },
+    { repositories: [{ ...ok, owner: 'enterprise' }], truncated: false },
+    { repositories: [{ ...ok, fork: 'false' }], truncated: false },
+    { repositories: [{ ...ok, pushed_at: 'yesterday' }], truncated: false },
+    { repositories: [{ ...ok, pushed_at: '2026-11-10T00:00:00+09:00' }], truncated: false },
+    { repositories: [{ ...ok, pushed_at: undefined }], truncated: false },
+    { repositories: [{ ...ok, name: 'org/secret/tree/main' }], truncated: false },
+    { repositories: [{ ...ok, name: 'https://github.com/org/secret' }], truncated: false },
+    { repositories: [{ ...ok, name: 'org' }], truncated: false },
+    { repositories: [{ ...ok, name: '../org/secret' }], truncated: false },
+    { repositories: [{ ...ok, name: `org/${'a'.repeat(300)}` }], truncated: false },
+    { repositories: [null], truncated: false },
+  ]) expect(readPrivateRepositoryList(value), JSON.stringify(value).slice(0, 80)).toBeNull();
+});

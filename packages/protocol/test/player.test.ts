@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 import {
   PLAYER_LOG_FETCH, PLAYER_MAX_CHUNK_BYTES, PLAYER_MAX_FRAGMENT, PLAYER_MAX_LOG_BYTES, PLAYER_MIN_CHUNK_BYTES, PLAYER_PROTOCOL,
   PLAYER_PROTOCOL_VERSION, PlayerHandoffReceiver, parsePlayerFragment, parsePlayerMessage, parsePlayerOrigins, playerHandoffMessages,
-  playerMessage, playerOriginAllowed, playerUrl, type HandoffResult, type PlayerMessage,
+  playerMessage, playerOriginAllowed, playerUrl, PLAYER_EVENTS, SIZE_CLASSES, type HandoffResult, type PlayerMessage,
 } from '../src/index.js';
 
 const PLAYER = 'https://viewer.example.test/';
@@ -99,6 +99,55 @@ test('messages of other protocols are ignored, and a wrong version or shape is r
   expect(parsePlayerMessage(playerMessage({ type: 'error', id: 'handoff-1', code: 'size' }))).toEqual({ message: { ...envelope, type: 'error', id: 'handoff-1', code: 'size' } });
 });
 
+test('the player’s events carry only their own properties, each a fixed word, a short code or a bounded number', () => {
+  const started = playerMessage({ type: 'event', event: 'playback_started', props: { first_frame_ms: 1200, fps_p50_5s: 59.5 } });
+  expect(parsePlayerMessage(structuredClone(started))).toEqual({ message: { ...envelope, type: 'event', event: 'playback_started', props: { first_frame_ms: 1200, fps_p50_5s: 59.5 } } });
+  expect(PLAYER_EVENTS).toEqual(['log_opened', 'playback_started', 'playback_ended', 'recording_started', 'recording_finished', 'recording_failed']);
+  expect(SIZE_CLASSES).toEqual(['<10KB', '<100KB', '<1MB', '<10MB', '<100MB', '>=100MB']);
+  const accepted = [
+    { event: 'log_opened', props: {} },
+    ...['url', 'message', 'file'].flatMap((source) => SIZE_CLASSES.map((log_size) => ({ event: 'log_opened', props: { source, log_size, commits: 1200 } }))),
+    { event: 'playback_ended', props: { watched_s: 0 } },
+    { event: 'recording_started', props: { resolution: '1920x1080', fps: 60, duration_s: 30 } },
+    { event: 'recording_failed', props: { resolution: '1280x720', fps: 30, reason: 'encoder_unavailable' } },
+    { event: 'recording_failed', props: { reason: 'x'.padEnd(64, 'y') } },
+  ];
+  for (const event of accepted) expect(parsePlayerMessage({ ...envelope, type: 'event', ...event }), JSON.stringify(event)).toEqual({ message: { ...envelope, type: 'event', ...event } });
+  const event = { ...envelope, type: 'event', event: 'log_opened', props: { source: 'file' } };
+  const failed = { ...envelope, type: 'event', event: 'recording_failed', props: { reason: 'internal' } };
+  for (const data of [
+    // Only the player's events: never an analysis, a page view or the page's other events.
+    { ...envelope, type: 'event', event: 'analysis_started', props: { host: 'github.com', repo: 'acme/secret' } },
+    { ...envelope, type: 'event', event: 'page_view', props: {} },
+    { ...envelope, type: 'event', event: 'client_error', props: { kind: 'unhandled' } },
+    { ...event, event: 'file_name' },
+    { ...event, event: 'toString' },
+    { ...event, props: { source: 'file', path: '/secret.rs' } },
+    // The page adds these itself.
+    { ...event, props: { screen: 'viewer' } },
+    { ...event, props: { app_version: '1' } },
+    // Text holds only its fixed words or a short code.
+    { ...event, props: { source: 'link' } },
+    { ...event, props: { log_size: '<2MB' } },
+    { ...failed, props: { reason: 'my_secret_repo_name_src_main_rs_'.repeat(3) } },
+    { ...failed, props: { reason: 'Secret' } },
+    { ...failed, props: { reason: 'a b' } },
+    { ...failed, props: { reason: 22 } },
+    { ...failed, props: { resolution: '1920x1080 ' } },
+    { ...failed, props: { resolution: '0x0' } },
+    // Numbers are bounded counts and durations.
+    { ...event, props: { commits: -1 } },
+    { ...event, props: { commits: 1e9 + 1 } },
+    { ...event, props: { commits: Number.NaN } },
+    { ...event, props: { commits: '3' } },
+    { ...event, props: { source: 3 } },
+    { ...event, props: [] },
+    { ...event, props: null },
+    { ...event, extra: 1 },
+    { ...envelope, type: 'event', props: {} },
+  ]) expect(parsePlayerMessage(data), JSON.stringify(data)).toEqual({ code: 'invalid' });
+});
+
 test('a log sent in chunks arrives whole through structured clone, with its title and options', () => {
   const log = bytes(3 * K + 100);
   const messages = playerHandoffMessages(log, { id: 'handoff-1', title: 'Mine', options: { hide: 'date' } }, K);
@@ -152,7 +201,8 @@ test('out-of-order, mismatched, wrongly sized and short handoffs fail once, then
 test('the player’s own messages and other protocols never disturb a handoff', () => {
   const receiver = new PlayerHandoffReceiver();
   const log = bytes(10);
-  const noise = [playerMessage({ type: 'ready' }), playerMessage({ type: 'ack', id: 'handoff-1' }), playerMessage({ type: 'error', code: 'timeout' }), { type: 'other' }, 'x'];
+  const noise = [playerMessage({ type: 'ready' }), playerMessage({ type: 'ack', id: 'handoff-1' }), playerMessage({ type: 'error', code: 'timeout' }),
+    playerMessage({ type: 'event', event: 'playback_ended', props: { watched_s: 4 } }), { type: 'other' }, 'x'];
   expect(deliver(receiver, noise)).toEqual(Array(noise.length).fill({ kind: 'ignored' }));
   const [begin, chunk, end] = delivered(playerHandoffMessages(log, { id: 'handoff-1', options: {} }));
   expect(deliver(receiver, [begin, ...noise, chunk, ...noise, end]).at(-1)).toEqual({ kind: 'complete', id: 'handoff-1', log, options: {} });

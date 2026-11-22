@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// What a page that shows the player's screens may plug in. The standalone
-// player plugs in nothing: it sends no analytics and has no sign-in. The
-// page that embeds these screens connects its own.
+// What the player's screens report to, and the hook a sign-out runs. The
+// player plugs in its events for the page that opened or embeds it
+// (./events.ts); it sends no analytics itself and has no sign-in.
 
 import type { AnalyticsEvent, PropValue } from '@gource-online/protocol';
 

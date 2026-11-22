@@ -44,7 +44,7 @@ export function playerCsp(config: PlayerConfig): string {
 export function playerHeaderMap(config: PlayerConfig): Record<string, string> {
   return {
     'Content-Security-Policy': playerCsp(config),
-    // The player sends nothing anywhere; a log URL never leaks through a referrer either.
+    // The player requests nothing but its log; a log URL never leaks through a referrer either.
     'Referrer-Policy': 'no-referrer',
     'X-Content-Type-Options': 'nosniff',
     // A page that opened the player keeps the link to it, so `ready` can reach that page (the new-window mode).

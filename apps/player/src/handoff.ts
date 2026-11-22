@@ -26,7 +26,8 @@ export interface PlayerLog {
 }
 
 /** `none`: no sender spoke before the timeout, so the person opens a local file instead. */
-export type Handoff = { kind: 'log'; log: PlayerLog } | { kind: 'failed'; message: string } | { kind: 'none' };
+/** `origin`: the sender's, for a log a page handed over. */
+export type Handoff = { kind: 'log'; log: PlayerLog; origin?: string } | { kind: 'failed'; message: string } | { kind: 'none' };
 
 const FAILURES: Record<PlayerErrorCode, string> = {
   version: 'The page that opened the player uses another version of the player protocol.',
@@ -107,6 +108,7 @@ export function messageHandoff(win: Window, sender: Window, config: PlayerConfig
       sender.postMessage(playerMessage({ type: 'ack', id: outcome.id }), origin);
       finish({
         kind: 'log',
+        origin,
         log: {
           source: { kind: 'file', file: new Blob([outcome.log as Uint8Array<ArrayBuffer>]), name: outcome.title ?? 'log' },
           ...(outcome.title === undefined ? {} : { title: outcome.title }),

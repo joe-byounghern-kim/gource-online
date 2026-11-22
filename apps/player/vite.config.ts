@@ -4,13 +4,14 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
+import { buildSourceRef, PUBLIC_REPO_URL } from './src/build-info';
 import { playerConfig, playerHeaders } from './src/headers';
 
 // The player's handoff settings are fixed at build time (apps/player/README.md):
 //   GOURCE_PLAYER_SENDERS  pages that may hand it a log by postMessage, and embed it
 //   GOURCE_PLAYER_SOURCES  origins it may download a `#src=` log from
 //   GOURCE_PLAYER_TEST_BUILD=1  a build for the tests: http loopback origins, the placeholder engine (?mock=1) and the sample logs
-//   GOURCE_SOURCE_REF, GOURCE_REPO_URL  the exact source the page links
+//   GOURCE_SOURCE_REF, GOURCE_REPO_URL  the exact source the page links (src/build-info.ts)
 // The dev server always allows both; a release build never does.
 
 /** The files the player serves besides its build: the licence, the engine's font and its notice, and the third-party notices. */
@@ -25,19 +26,15 @@ const ASSETS = new Map<string, URL>([
 const SAMPLE_DIR = new URL('./tests/samples/', import.meta.url);
 const samples = () => readdirSync(SAMPLE_DIR).filter((name) => name.endsWith('.log')).map((name) => [`samples/${name}`, new URL(name, SAMPLE_DIR)] as const);
 
-/** The exact source of this build, which the page links (GPL-3.0-or-later): an exact tag when the commit has one, else the commit. */
+/** The exact source of this build, which the page links (GPL-3.0-or-later): GOURCE_SOURCE_REF, else the release tag the commit has. */
 function sourceRef(): string {
-  if (process.env.GOURCE_SOURCE_REF) return process.env.GOURCE_SOURCE_REF;
-  try {
-    return execFileSync('git', ['describe', '--tags', '--exact-match'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-  } catch {
-    try {
-      return execFileSync('git', ['rev-parse', 'HEAD'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-    } catch {
-      return 'main';
-    }
-  }
+  return buildSourceRef(process.env.GOURCE_SOURCE_REF, () =>
+    execFileSync('git', ['describe', '--tags', '--exact-match', '--match', 'v*'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString(),
+  );
 }
+
+/** The version of `npx gource-online` this player ships with, for the command on the start screen. */
+const CLI_VERSION: string = JSON.parse(readFileSync(new URL('../cli/package.json', import.meta.url), 'utf8')).version;
 
 export default defineConfig(({ command }) => {
   const test = command === 'serve' || process.env.GOURCE_PLAYER_TEST_BUILD === '1';
@@ -81,7 +78,8 @@ export default defineConfig(({ command }) => {
       __PLAYER_CONFIG__: JSON.stringify(config),
       __PLAYER_MOCK__: JSON.stringify(test),
       __GOURCE_SOURCE_REF__: JSON.stringify(sourceRef()),
-      __GOURCE_REPO_URL__: JSON.stringify(process.env.GOURCE_REPO_URL ?? 'https://github.com/joe-byounghern-kim/gource-online'),
+      __GOURCE_REPO_URL__: JSON.stringify(process.env.GOURCE_REPO_URL ?? PUBLIC_REPO_URL),
+      __GOURCE_CLI_VERSION__: JSON.stringify(CLI_VERSION),
     },
     server: { port: 5174 },
     worker: { format: 'es' },

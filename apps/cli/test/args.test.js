@@ -37,3 +37,27 @@ test('mistakes are usage errors', () => {
     assert.throws(() => parseOptions(argv), UsageError, argv.join(' '));
   }
 });
+
+test('usage errors are in the command\'s words, not Node\'s', () => {
+  /** @param {string[]} argv */
+  const message = (argv) => {
+    try {
+      parseOptions(argv);
+    } catch (err) {
+      return err instanceof Error ? err.message : '';
+    }
+    return '';
+  };
+  assert.equal(message(['--frobnicate']), 'Unknown option "--frobnicate".');
+  assert.equal(message(['--port 80']), 'Unknown option "--port 80".');
+  assert.equal(message(['-x']), 'Unknown option "-x".');
+  assert.equal(message(['--port']), '--port needs a number from 1 to 65535, such as --port 8080.');
+  assert.equal(message(['--output']), '--output needs a file name, such as --output history.gitlog.');
+  assert.equal(message(['--help=1']), '--help does not take a value.');
+  assert.equal(message(['--no-open=yes']), '--no-open does not take a value.');
+  assert.equal(message(['--port', 'abc']), '--port must be a number from 1 to 65535, not "abc".');
+  for (const argv of [['--frobnicate'], ['--port'], ['dir'], ['--help=1']]) {
+    // Printed as `gource-online: <first line>`, then the rest as it is.
+    for (const line of `gource-online: ${message(argv)}`.split('\n')) assert.ok(line.length <= 80, line);
+  }
+});

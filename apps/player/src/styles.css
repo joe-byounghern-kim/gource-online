@@ -1,16 +1,234 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* The player's start screen, on the shared theme (styles/theme.css). The viewer has its own (styles/viewer.css).
-   Default styling only: the visual design comes later (D17). */
+/* The player's start screen (src/start.ts), on the shared theme (styles/theme.css). The viewer has its own
+   (styles/viewer.css). The whole screen is `hidden` while a log plays. */
 
-.player { max-width: 60ch; margin: 0 auto; padding: 2rem 1rem; }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.player {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 20px var(--gutter) 40px;
+}
 .player[hidden] { display: none; }
-.player-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
-.player-title { font-size: 1.1rem; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40ch; }
-.player-status { margin: 0; flex: 1; }
-.player-open { cursor: pointer; }
+
+/* ---------- bar ---------- */
+
+.player-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-height: 38px;
+}
+.player-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.player-mark { width: 28px; height: 28px; flex: none; }
+.mark-edge { fill: none; stroke: var(--border-strong); stroke-width: 1.4; stroke-linecap: round; }
+.mark-node { fill: var(--text); }
+.mark-add { fill: var(--green); }
+.mark-modify { fill: var(--orange); }
+.mark-delete { fill: var(--red); }
+.player-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40ch;
+}
+.player-status { margin: 0; flex: 1; color: var(--text-2); }
 .player-open:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The start screen has its own button; the bar's is for the states without it. */
+.player:is([data-state='idle'], [data-state='failed']) .player-open { display: none; }
 .player-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.player-banner { margin: 1rem 0 0; padding: 0.5rem 1rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
-.player-empty { padding: 1rem 0; }
-.player-licence { font-size: 0.875rem; opacity: 0.8; }
+.player-banner {
+  margin: 20px 0 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(239, 91, 91, 0.45);
+  border-radius: var(--radius-sm);
+  background: rgba(239, 91, 91, 0.08);
+}
+.player-licence { margin: 0; font-size: 13px; color: var(--muted); }
 #control-panel > .player-licence { padding: 0.75rem 1rem; margin: 0; }
+
+/* ---------- start screen ---------- */
+
+.player-empty { padding-top: 36px; }
+.start-intro { max-width: 62ch; margin-bottom: 28px; }
+.start-intro h2 {
+  margin: 0 0 8px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.start-lead { margin: 0; color: var(--text-2); font-size: 16px; }
+
+.start-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 16px;
+}
+
+.start-drop,
+.start-howto {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.start-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 260px;
+  padding: 28px 20px;
+  border: 1.5px dashed var(--border-strong);
+  background: var(--bg-deep);
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.player[data-dragging] .start-drop {
+  border-color: var(--accent);
+  background: rgba(90, 169, 255, 0.07);
+}
+.start-drop-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: rgba(90, 169, 255, 0.1);
+  color: var(--accent);
+}
+.start-drop-icon .icon { width: 26px; height: 26px; }
+.start-open { height: 44px; padding: 0 22px; font-size: 15px; }
+.start-drop p { margin: 0; }
+.start-drop-hint { color: var(--text-2); }
+.start-drop .start-drop-formats { margin-top: 10px; max-width: 34ch; color: var(--muted); font-size: 13px; }
+.start-drop .start-privacy { margin-top: 14px; color: var(--green); font-size: 13px; }
+.start-privacy .icon { width: 15px; height: 15px; margin-right: 6px; vertical-align: -3px; }
+
+.start-howto { padding: 20px 20px 22px; }
+.start-howto h3 { margin: 0 0 12px; font-size: 16px; }
+.start-howto h4 { margin: 0 0 6px; font-size: 14px; }
+.start-howto p { margin: 0 0 10px; color: var(--text-2); }
+.start-steps { margin: 0; padding-left: 20px; }
+.start-steps li { padding-left: 4px; }
+.start-steps li + li { margin-top: 12px; }
+.start-steps li::marker { color: var(--muted); font-weight: 650; }
+.start-steps li > p:last-child { margin-bottom: 0; }
+.start-howto .start-note { font-size: 13px; color: var(--muted); }
+.start-oneshot { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+.player-empty code {
+  font: 0.92em/1.4 var(--mono);
+}
+.player-empty p code,
+.player-empty li code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.start-command {
+  margin: 0 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+.start-command-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+.start-command-caption { display: inline-flex; align-items: center; gap: 6px; margin-right: auto; }
+.start-command-caption .icon { width: 14px; height: 14px; }
+.start-copy-status { color: var(--green); text-align: right; }
+.start-copy.is-done { color: var(--green); }
+.start-command-text {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 9.5em;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 12.5px;
+}
+.player-empty .start-command-text code { padding: 0; background: none; font-size: inherit; }
+.start-command-text:focus-visible { outline-offset: -2px; }
+
+.start-site {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-top: 16px;
+  padding: 14px 16px 14px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, rgba(90, 169, 255, 0.08), rgba(98, 210, 111, 0.05));
+}
+.start-site p { margin: 0; flex: 1 1 32ch; color: var(--text-2); }
+.start-site strong { color: var(--text); font-weight: 600; }
+
+.start-about {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 40px;
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 14px;
+}
+.start-about h3 { margin: 0 0 6px; font-size: 14px; color: var(--text); }
+.start-about p { margin: 0 0 10px; }
+.start-about .player-licence { grid-column: 1 / -1; margin-top: 8px; }
+.start-links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.start-link { display: inline-flex; align-items: center; gap: 4px; }
+.start-link .icon,
+.start-site-link .icon:last-child,
+.start-star .icon:last-child { width: 14px; height: 14px; opacity: 0.75; }
+.start-star .icon-star { color: var(--orange); }
+.player a.btn { color: var(--text); text-decoration: none; }
+
+@media (max-width: 760px) {
+  .player { padding-top: 14px; }
+  .player-empty { padding-top: 24px; }
+  .start-intro h2 { font-size: 24px; }
+  .start-lead { font-size: 15px; }
+  .start-grid,
+  .start-about { grid-template-columns: minmax(0, 1fr); }
+  .start-drop { min-height: 0; padding: 24px 16px; }
+  .start-howto { padding: 16px; }
+  .start-site { padding: 14px 16px; }
+  .start-site-link { width: 100%; }
+}

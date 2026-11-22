@@ -10,7 +10,9 @@ bundled by `npx gource-online`. It plays one Gource log, which it gets in one of
 
 The first two follow the MIT handoff protocol in `packages/protocol/src/player.ts`, documented in
 [docs/features/player-handoff.md](../../docs/features/player-handoff.md). The player has no sign-in,
-no account and no paid features. It reads no cookies and sends nothing anywhere.
+no account and no paid features. It reads no cookies and requests nothing but the log it plays. It
+tells the page that opened or embeds it how playback went (counts and sizes only, never a name; the
+protocol's `event` message), and nothing to any other page.
 
 ## What comes from Gource
 
@@ -34,7 +36,7 @@ FreeFont, the font Gource ships (`assets/fonts/README`).
 | `GOURCE_PLAYER_SOURCES` | Space-separated exact HTTPS origins the player may fetch a `#src=` log from, besides its own. |
 | `GOURCE_PLAYER_TEST_BUILD` | `1` makes a test build: http loopback origins, the placeholder engine (`?mock=1`) and the sample logs (`/samples/`). A release build has none of them; the dev server always has them. |
 | `VITE_E2E_HOOKS` | `1` adds the test hooks: `window.__gource`, `?fixed-dt=<seconds>`, `?mock-record=1`. Never in a release build. |
-| `GOURCE_SOURCE_REF`, `GOURCE_REPO_URL` | The exact source the page links: a tag or commit (default: `git describe`) and the repository. |
+| `GOURCE_SOURCE_REF`, `GOURCE_REPO_URL` | The source the page links: a tag or commit (default: the commit's `v*` release tag, else none) and the repository (default: the public `joe-byounghern-kim/gource-online`). With no ref the page links the repository's front page; in the public repository only a release tag is linked (`src/build-info.ts`). |
 
 With none set, the player plays only local files and logs on its own origin, and cannot be embedded.
 
@@ -55,7 +57,13 @@ MP4 export, and the AI statistics. A log by URL keeps its link equal to the view
 fragment). Opening a local file or another link while a page is handing over a log cancels that
 handoff, and the page is told (`cancelled`).
 
-Both the start screen and the settings panel link the licence, the exact source of the build and the third-party notices.
+With no log to play, the start screen (`src/start.ts`) offers a local file first, then how to make one: Gource's
+git command (`shellLogCommand` in `packages/protocol`) or `npx -y gource-online@<version>`, the version taken from
+`apps/cli/package.json` at build time. It points to the hosted site (the `gource.online` origin among
+`GOURCE_PLAYER_SENDERS`, else `https://gource.online`; left out when embedded), says what Gource is, and links the
+public repository. It stays hidden while a log by link loads or a page may still hand one over.
 
-A page that shows these screens may plug in analytics and a run-ending hook (`src/host.ts`). The
-player plugs in neither.
+Both the start screen and the settings panel link the licence, the source of the build and the third-party notices.
+
+The screens report recordings and take a run-ending hook through `src/host.ts`. The player plugs in
+its events for the page that opened or embeds it (`src/events.ts`) and no run-ending hook.
