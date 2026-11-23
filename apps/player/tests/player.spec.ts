@@ -447,18 +447,27 @@ test.describe('the start screen', () => {
   });
 
   test('the Copy buttons copy each command, and select it where the clipboard is not available', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: o.player });
+    // A clipboard that records what it is given: the real one also needs the page to have focus.
+    await page.addInitScript(() => {
+      const copied: string[] = [];
+      Object.assign(window, { __copied: copied });
+      Object.defineProperty(Navigator.prototype, 'clipboard', { get: () => ({ writeText: async (text: string) => { copied.push(text); } }) });
+    });
     await page.goto(`${o.player}/?mock=1`);
+    await expectState(page, 'idle');
     const start = page.locator('.player-empty');
     for (const name of ['git command', 'npx command']) {
-      await start.getByRole('button', { name: `Copy the ${name}` }).click();
-      await expect(start.getByRole('status').filter({ hasText: 'Copied' })).toHaveCount(1);
-      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(await start.getByLabel(name, { exact: true }).textContent());
+      // Each command has its own status, and the first one's "Copied" stays for 4 s: check the one beside the button.
+      const block = start.locator('.start-command', { has: page.getByRole('button', { name: `Copy the ${name}` }) });
+      await block.getByRole('button').click();
+      await expect(block.getByRole('status')).toHaveText('Copied');
+      expect(await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied.at(-1))).toBe(await start.getByLabel(name, { exact: true }).textContent());
     }
 
     const bare = await context.newPage();
     await bare.addInitScript(() => Object.defineProperty(Navigator.prototype, 'clipboard', { get: () => undefined }));
     await bare.goto(`${o.player}/?mock=1`);
+    await expectState(bare, 'idle');
     await bare.getByRole('button', { name: 'Copy the npx command' }).click();
     await expect(bare.locator('.player-empty').getByRole('status').filter({ hasText: 'press Ctrl+C' })).toHaveCount(1);
     expect(await bare.evaluate(() => window.getSelection()?.toString())).toBe(`npx -y gource-online@${CLI_VERSION}`);
