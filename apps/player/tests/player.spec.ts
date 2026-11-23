@@ -5,7 +5,8 @@
 // (?mock=1, test builds only) keeps it fast; player-real.spec.ts runs the engine.
 
 import { expect, test } from '@playwright/test';
-import { embed, expectState, fragment, got, gotTypes, handOver, mockCalls, openPlayer, startOrigins, type Origins, type Request } from './servers';
+import { readFileSync } from 'node:fs';
+import { embed, expectState, fragment, got, gotEvents, gotTypes, handOver, mockCalls, openPlayer, startOrigins, type Origins, type Request } from './servers';
 
 let o: Origins;
 let requests: Request[];
@@ -90,8 +91,9 @@ test.describe('by postMessage', () => {
     expect((await got(page))[0]).toMatchObject({ origin: o.player, fromPlayer: true });
     const frame = page.frameLocator('iframe.player');
     await expect(frame.locator('main.player')).toHaveAttribute('data-state', 'waiting');
-    // While it waits, the person can still open a local file.
-    await expect(frame.locator('.player-empty')).toBeVisible();
+    // While it waits, the start screen stays hidden (the log is on its way), but the person can still open a local file.
+    await expect(frame.locator('.player-empty')).toBeHidden();
+    await expect(frame.locator('.player-bar .player-open')).toBeVisible();
     await handOver(page, o.player);
     await expect.poll(() => gotTypes(page)).toEqual(['ready', 'ack']);
     await expect(frame.locator('main.player')).toHaveAttribute('data-state', 'playing');
@@ -278,7 +280,63 @@ test.describe('by postMessage', () => {
     await handOver(page, o.player);
     await opened.locator('.player-file-input').setInputFiles({ name: 'mine.log', mimeType: 'text/plain', buffer: Buffer.from('1704067200|Me|A|/x\n') });
     await expect(opened.locator('.viewer-name')).toHaveText('mine.log');
+    // Its events go to the senders' origins only, so this page hears none of them either.
+    await opened.getByRole('button', { name: 'Open another log' }).click();
+    await expectState(opened, 'idle');
     expect(await got(page)).toEqual([]);
+  });
+});
+
+test.describe('events for the page that opened or embeds the player', () => {
+  test('a handed-over log: the sender hears it open, start and end, with counts only, after the opener is cut', async ({ page, context }) => {
+    await context.clock.install();
+    await page.goto(`${o.sender}/page.html`);
+    const opened = await openPlayer(page, `${o.player}/?mock=1`);
+    await expect.poll(() => gotTypes(page)).toEqual(['ready']);
+    await handOver(page, o.player);
+    await expectState(opened, 'playing');
+    expect(await opened.evaluate(() => window.opener)).toBeNull();
+    await expect.poll(() => gotEvents(page)).toEqual([
+      { event: 'log_opened', props: { source: 'message', log_size: '<10KB', commits: 3 }, origin: o.player, fromPlayer: true },
+    ]);
+    await opened.clock.runFor(5_500);
+    await expect.poll(async () => (await gotEvents(page)).map((e) => e.event)).toEqual(['log_opened', 'playback_started']);
+    const started = (await gotEvents(page))[1]!.props!;
+    expect(started.first_frame_ms).toEqual(expect.any(Number));
+    expect(Object.keys(started).filter((key) => key !== 'first_frame_ms' && key !== 'fps_p50_5s')).toEqual([]);
+    await opened.clock.runFor(2_000);
+    await opened.getByRole('button', { name: 'Open another log' }).click();
+    await expect.poll(async () => (await gotEvents(page)).map((e) => e.event)).toEqual(['log_opened', 'playback_started', 'playback_ended']);
+    expect((await gotEvents(page))[2]!.props).toEqual({ watched_s: expect.any(Number) });
+    // The handoff's own messages are unchanged.
+    expect(await gotTypes(page)).toEqual(['ready', 'ack']);
+  });
+
+  test('a log by URL from a sender\'s window: the opener is cut at once, and the sender still hears playback', async ({ page }) => {
+    await page.goto(`${o.sender}/page.html`);
+    const opened = await openPlayer(page, `${o.player}/?mock=1${fragment({ src: `${o.logs}/events.log`, title: 'Public repo' })}`);
+    await expectState(opened, 'playing');
+    expect(await opened.evaluate(() => window.opener)).toBeNull();
+    await expect.poll(() => gotEvents(page)).toEqual([
+      { event: 'log_opened', props: { source: 'url', log_size: '<10KB', commits: 3 }, origin: o.player, fromPlayer: true },
+    ]);
+    // A page closing ends playback too.
+    await opened.goto('about:blank');
+    await expect.poll(async () => (await gotEvents(page)).map((e) => e.event)).toContain('playback_ended');
+    expect(await gotTypes(page)).toEqual([]);
+  });
+
+  test('embedded: the page around the player hears a local file open, never its name', async ({ page }) => {
+    await page.goto(`${o.sender}/page.html`);
+    await embed(page, `${o.player}/?mock=1`);
+    await expect.poll(() => gotTypes(page)).toEqual(['ready']);
+    const frame = page.frameLocator('iframe.player');
+    await frame.locator('.player-file-input').setInputFiles({ name: 'secret-name.log', mimeType: 'text/plain', buffer: Buffer.from('1704067200|Me|A|/x\n') });
+    await expect(frame.locator('.viewer-name')).toHaveText('secret-name.log');
+    await expect.poll(() => gotEvents(page)).toEqual([
+      { event: 'log_opened', props: { source: 'file', log_size: '<10KB', commits: 1 }, origin: o.player, fromPlayer: true },
+    ]);
+    expect(JSON.stringify(await got(page))).not.toContain('secret-name');
   });
 });
 
@@ -335,5 +393,113 @@ test.describe('local file', () => {
     await expectState(page, 'failed');
     await expect(page.locator('main[data-screen="viewer"]')).toHaveCount(0);
     await expect(page.locator('.player-empty')).toBeVisible();
+  });
+});
+
+test.describe('the start screen', () => {
+  const CLI_VERSION = JSON.parse(readFileSync(new URL('../../cli/package.json', import.meta.url), 'utf8')).version as string;
+
+  /** Records whether the start screen was ever on screen, from the first mutation of the page. */
+  const watchStart = () => {
+    const w = window as unknown as { startShown: boolean };
+    w.startShown = false;
+    new MutationObserver(() => {
+      if (document.querySelector('.player-empty:not([hidden])')) w.startShown = true;
+    }).observe(document, { subtree: true, childList: true, attributes: true });
+  };
+  const startShown = (page: import('@playwright/test').Page) => page.evaluate(() => (window as unknown as { startShown: boolean }).startShown);
+
+  test('opens a file first, says how to make one, and links the hosted site, Gource and the source', async ({ page }) => {
+    await page.goto(`${o.player}/?mock=1`);
+    await expectState(page, 'idle');
+    const start = page.locator('.player-empty');
+    await expect(start.getByRole('heading', { level: 2 })).toHaveText('Play a Gource log');
+    await expect(start.getByRole('button', { name: 'Open a log file' })).toBeVisible();
+    // One way to open a file at a time: the bar's is for the states without the start screen.
+    await expect(page.locator('.player-bar .player-open')).toBeHidden();
+    await expect(start).toContainText('The file is read in this browser. Nothing is uploaded.');
+
+    const git = start.getByLabel('git command', { exact: true });
+    await expect(git).toHaveText(/^git -c core\.quotepath=off log --reverse --raw .* --output=history\.gitlog$/);
+    await expect(start.getByLabel('npx command', { exact: true })).toHaveText(`npx -y gource-online@${CLI_VERSION}`);
+
+    const link = (name: string | RegExp) => start.getByRole('link', { name });
+    // The test build's senders are not gource.online, so the hosted site is gource.online.
+    for (const [name, href] of [
+      [/^Go to gource\.online/, 'https://gource.online'],
+      [/^gource\.io/, 'https://gource.io'],
+      [/^Gource on GitHub/, 'https://github.com/acaudwell/Gource'],
+      [/^Star it on GitHub/, 'https://github.com/joe-byounghern-kim/gource-online'],
+    ] as const) {
+      await expect(link(name)).toHaveAttribute('href', href);
+      await expect(link(name)).toHaveAttribute('target', '_blank');
+      await expect(link(name)).toHaveAttribute('rel', 'noopener noreferrer');
+      await expect(link(name)).toContainText('(opens in a new tab)');
+    }
+    await expect(start).toContainText('Andrew Caudwell');
+    await expect(start).toContainText('not made or endorsed by Gource\'s author');
+
+    // Gone while a log plays: nothing is left over the visualisation.
+    await page.locator('.player-file-input').setInputFiles({ name: 'a.log', mimeType: 'text/plain', buffer: Buffer.from('1704067200|A|A|/a\n') });
+    await expectState(page, 'playing');
+    await expect(page.locator('main.player')).toBeHidden();
+    await expect(start).toBeHidden();
+  });
+
+  test('the Copy buttons copy each command, and select it where the clipboard is not available', async ({ page, context }) => {
+    // A clipboard that records what it is given: the real one also needs the page to have focus.
+    await page.addInitScript(() => {
+      const copied: string[] = [];
+      Object.assign(window, { __copied: copied });
+      Object.defineProperty(Navigator.prototype, 'clipboard', { get: () => ({ writeText: async (text: string) => { copied.push(text); } }) });
+    });
+    await page.goto(`${o.player}/?mock=1`);
+    await expectState(page, 'idle');
+    const start = page.locator('.player-empty');
+    for (const name of ['git command', 'npx command']) {
+      // Each command has its own status, and the first one's "Copied" stays for 4 s: check the one beside the button.
+      const block = start.locator('.start-command', { has: page.getByRole('button', { name: `Copy the ${name}` }) });
+      await block.getByRole('button').click();
+      await expect(block.getByRole('status')).toHaveText('Copied');
+      expect(await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied.at(-1))).toBe(await start.getByLabel(name, { exact: true }).textContent());
+    }
+
+    const bare = await context.newPage();
+    await bare.addInitScript(() => Object.defineProperty(Navigator.prototype, 'clipboard', { get: () => undefined }));
+    await bare.goto(`${o.player}/?mock=1`);
+    await expectState(bare, 'idle');
+    await bare.getByRole('button', { name: 'Copy the npx command' }).click();
+    await expect(bare.locator('.player-empty').getByRole('status').filter({ hasText: 'press Ctrl+C' })).toHaveCount(1);
+    expect(await bare.evaluate(() => window.getSelection()?.toString())).toBe(`npx -y gource-online@${CLI_VERSION}`);
+  });
+
+  test('works with the keyboard, and fits a 390px-wide screen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${o.player}/?mock=1`);
+    await expectState(page, 'idle');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Open a log file' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Copy the git command' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByLabel('git command', { exact: true })).toBeFocused();
+  });
+
+  test('never shows while a log by link loads or a page hands one over', async ({ page }) => {
+    // On the context, so the window the sender opens below has it too.
+    await page.context().addInitScript(watchStart);
+    await page.goto(`${o.player}/?mock=1${fragment({ src: `${o.logs}/start-hidden.log` })}`);
+    await expectState(page, 'playing');
+    expect(await startShown(page)).toBe(false);
+
+    await page.goto(`${o.sender}/page.html`);
+    const opened = await openPlayer(page, `${o.player}/?mock=1`);
+    await expect.poll(() => gotTypes(page)).toEqual(['ready']);
+    await expectState(opened, 'waiting');
+    await expect(opened.locator('.player-bar .player-open')).toBeVisible();
+    await handOver(page, o.player);
+    await expectState(opened, 'playing');
+    expect(await startShown(opened)).toBe(false);
   });
 });

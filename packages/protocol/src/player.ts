@@ -5,6 +5,8 @@
  * A log that must stay out of URLs goes by `postMessage`, from the page that opened or embeds the player.
  * Pages talk to the player only through this protocol.
  */
+import { ANALYTICS_COMMON_PROPS, ANALYTICS_EVENTS, SIZE_CLASSES, type AnalyticsEvent, type PropType, type PropValue } from './analytics.js';
+
 export const PLAYER_PROTOCOL = 'gource-player';
 export const PLAYER_PROTOCOL_VERSION = 1;
 /** The hosted service's log cap: the player takes no more than the service would serve. */
@@ -57,6 +59,12 @@ export type PlayerMessage = Envelope & (
   /** Player to sender: the whole log arrived and playback starts. */
   | { type: 'ack'; id: string }
   | { type: 'error'; id?: string; code: PlayerErrorCode }
+  /**
+   * Player to sender: how playback went, as one of `PLAYER_EVENTS` with only that event's own properties, never
+   * the page's common ones, each a fixed word, a short code or a bounded number. The sender may count it under its
+   * own policy, or ignore it.
+   */
+  | { type: 'event'; event: AnalyticsEvent; props: Readonly<Record<string, PropValue>> }
 );
 type Body<T extends PlayerMessage['type']> = Omit<Extract<PlayerMessage, { type: T }>, keyof Envelope>;
 
@@ -79,6 +87,32 @@ function validOptions(value: unknown): value is PlayerOptions {
   const entries = Object.entries(value);
   return entries.length <= MAX_OPTIONS && entries.every(([name, option]) =>
     OPTION_NAME.test(name) && typeof option === 'string' && option.length <= MAX_OPTION_VALUE);
+}
+
+/** The events a player sends the page that opened or embeds it: a log, its playback and its recording. */
+export const PLAYER_EVENTS: readonly AnalyticsEvent[] = Object.freeze([
+  'log_opened', 'playback_started', 'playback_ended', 'recording_started', 'recording_finished', 'recording_failed',
+] as const);
+/** The largest number a player event carries: counts, milliseconds, seconds and frame rates are below it. */
+const MAX_EVENT_NUMBER = 1e9;
+/** What each text property of a player event may hold: a fixed word or a short code, never a name, a path or a URL. */
+const EVENT_TEXT: Readonly<Record<string, (value: string) => boolean>> = Object.freeze({
+  source: (value: string) => value === 'url' || value === 'message' || value === 'file',
+  log_size: (value: string) => SIZE_CLASSES.includes(value),
+  resolution: (value: string) => /^[1-9][0-9]{0,4}x[1-9][0-9]{0,4}$/.test(value),
+  reason: (value: string) => /^[a-z][a-z0-9_]{0,63}$/.test(value),
+});
+
+/** A player event with only its own properties, each of its type and within its values. */
+function validEvent(event: unknown, props: unknown): boolean {
+  if (typeof event !== 'string' || !PLAYER_EVENTS.includes(event as AnalyticsEvent) || !isRecord(props)) return false;
+  const schema: Readonly<Record<string, PropType>> = ANALYTICS_EVENTS[event as AnalyticsEvent];
+  return Object.entries(props).every(([key, value]) => {
+    if (ANALYTICS_COMMON_PROPS.includes(key) || !Object.hasOwn(schema, key)) return false;
+    if (schema[key] === 'string') return typeof value === 'string' && Object.hasOwn(EVENT_TEXT, key) && EVENT_TEXT[key]!(value);
+    if (schema[key] === 'number') return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= MAX_EVENT_NUMBER;
+    return typeof value === 'boolean';
+  });
 }
 
 const loopback = (url: URL) => url.hostname === '127.0.0.1' || url.hostname === 'localhost' || url.hostname === '[::1]';
@@ -193,6 +227,7 @@ export function parsePlayerMessage(data: unknown): { message: PlayerMessage } | 
       ok = exactKeys(data, [...base, 'code'], ['id']) && (data.id === undefined || id(data.id))
         && ['version', 'invalid', 'size', 'order', 'timeout', 'cancelled'].includes(data.code as string);
       break;
+    case 'event': ok = exactKeys(data, [...base, 'event', 'props']) && validEvent(data.event, data.props); break;
     default: ok = false;
   }
   return ok ? { message: data as unknown as PlayerMessage } : { code: 'invalid' };
@@ -225,7 +260,7 @@ export class PlayerHandoffReceiver {
     const message = parsed.message;
     // A sender that gives up says so for its handoff; the player's own messages change nothing.
     if (message.type === 'error' && this.begin && message.id === this.begin.id) return this.fail(message.code, message.id);
-    if (message.type === 'ready' || message.type === 'ack' || message.type === 'error') return { kind: 'ignored' };
+    if (message.type === 'ready' || message.type === 'ack' || message.type === 'error' || message.type === 'event') return { kind: 'ignored' };
     if (message.type === 'begin') {
       if (this.state !== 'waiting') return this.fail('order', this.begin?.id);
       this.begin = message;

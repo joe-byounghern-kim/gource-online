@@ -17,6 +17,10 @@ concurrency:
 
 # Trusted private jobs prefer AZURE_RUNNER, with CI_RUNNER as the local fallback.
 # Public repositories and fork PRs always use GitHub-hosted runners.
+#
+# Runners are ephemeral, so saving the Rust cache cost every PR job up to a
+# minute and a half. Only pushes save it; pull requests restore the base
+# branch's cache.
 jobs:
   rust:
     runs-on: ${{ fromJSON((github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (vars.AZURE_RUNNER || vars.CI_RUNNER) || '"ubuntu-latest"') }}
@@ -33,9 +37,36 @@ jobs:
           done
       - uses: ./.github/actions/rust-toolchain
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.event_name == 'push' }}
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo clippy -p gource-web --target wasm32-unknown-unknown --locked -- -D warnings
+      - name: Peak runner memory
+        if: always()
+        run: |
+          for file in /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory/memory.max_usage_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+
+  # The workspace tests take about three minutes, so they run beside the lints.
+  rust-test:
+    runs-on: ${{ fromJSON((github.event.repository.private && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (vars.AZURE_RUNNER || vars.CI_RUNNER) || '"ubuntu-latest"') }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Runner allocation
+        run: |
+          df -h "$GITHUB_WORKSPACE"
+          for file in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max \
+            /sys/fs/cgroup/cpu/cpu.cfs_quota_us /sys/fs/cgroup/cpu/cpu.cfs_period_us \
+            /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            if [ -r "$file" ]; then printf '%s: ' "$file"; cat "$file"; fi
+          done
+      - uses: ./.github/actions/rust-toolchain
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.event_name == 'push' }}
       - run: cargo test --workspace --locked
       - name: Peak runner memory
         if: always()
@@ -65,6 +96,8 @@ jobs:
           done
       - uses: ./.github/actions/rust-toolchain
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.event_name == 'push' }}
       - name: wasm-bindgen version (the one in Cargo.lock)
         id: wasm-bindgen
         run: echo "version=$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' Cargo.lock)" >> "$GITHUB_OUTPUT"

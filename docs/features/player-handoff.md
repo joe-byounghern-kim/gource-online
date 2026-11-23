@@ -37,7 +37,8 @@ https://viewer.example/#src=<log URL>&title=<text>&o.<option>=<value>
 
 Such a log can be private, and the protocol does not say which. So while one plays, the player keeps changed settings
 in memory (style rules, AI options, recording defaults and presets), and they end with it; earlier stored settings are
-still read. Its name stays out of the tab title. The player clears `window.opener` when the handoff ends, however it ends.
+still read. Its name stays out of the tab title. The player clears `window.opener` when the handoff ends, however it ends,
+and at once when it plays a log by URL.
 
 This path is for logs that must not appear in a URL, browser history or server logs, such as
 owner-only results. The sender opens the player in a new window, or embeds it in an iframe, and
@@ -82,6 +83,30 @@ talks to that window only.
 bytes, never the input's whole underlying buffer: a view such as Node's pooled `Buffer` shares that
 buffer with other data. A `SharedArrayBuffer` input is refused.
 
+## Events for the sender
+
+Player → sender: `event` with `{ event, props }`, how playback went. `event` is one of `PLAYER_EVENTS`,
+the player's own events of `ANALYTICS_EVENTS` (`packages/protocol/src/analytics.ts`). `props` holds only that
+event's own properties, never the common `app_version` and `screen`, which the page adds itself. Each
+text property is a fixed word or a short code, and each number is between 0 and 10⁹.
+`parsePlayerMessage` refuses anything else, and the player never sends what it would refuse:
+- `log_opened` with `{ source, log_size, commits }`, when the whole log is read. `source` is `url`,
+  `message` or `file`. `log_size` is one of `SIZE_CLASSES` (`sizeBucket`). `commits` is rounded to two
+  significant figures.
+- `playback_started` with `{ first_frame_ms, fps_p50_5s? }`, after the first five seconds on
+  screen, and `playback_ended` with `{ watched_s }` when another log opens, the person goes back to
+  the start screen, or the page goes away.
+- `recording_started`, `recording_finished` and `recording_failed`, with the recording's resolution
+  (`WxH`), frame rate and length, and for a failure its `reason`, a snake_case code.
+
+No event carries a name, a path, an address or log text. The player posts each one to the window that
+opened or embeds it, also after `window.opener` is cleared (it keeps that window from the start). It posts
+with each allowed sender origin as `targetOrigin`, and only with the sender's own once a handoff fixed it,
+so only a sender's page hears it. A player with no such window, such as a link opened on its own or
+`npx gource-online`, sends nothing. The player makes no request for events. The sender decides whether
+and how to count them, and ignores any `event` that is not from the player window it opened or embedded.
+The receiver ignores `event`.
+
 ## Origins
 
 Both sides check the other's exact origin before they look at a message:
@@ -122,7 +147,8 @@ runs the built player on real origins, with no request interception:
 - a frame of the sender page, which is ignored, and the opener's window after it moved to another
   allowed origin, which is ignored too (the first sender fixes the origin);
 - a log server, including a redirect to an allowed log, which `redirect: 'error'` refuses;
-- a hostile origin that may neither embed the player nor hand it a log.
+- a hostile origin that may neither embed the player nor hand it a log, nor hear its events;
+- the sender hearing a log open, start and end, by URL, handed over and embedded, never with a name.
 
 ## Not covered here
 

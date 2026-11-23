@@ -9,6 +9,7 @@
 
 import { SNAPSHOT_OPTION_KEYS, SNAPSHOT_RECORD_KEYS } from '@gource-online/protocol';
 import { h } from '../dom';
+import { failureCode } from '../events';
 import { playerHost } from '../host';
 import type { GourceApp } from '@gource-online/viewer';
 import { ApiError, parseWasmError, type WasmError } from '../errors';
@@ -1803,7 +1804,7 @@ export class RecordDialog {
   private showFailed(canSave: boolean): void {
     const e = this.runError ?? { code: 'internal', text: 'Unknown error' };
     this.screen = 'failed';
-    playerHost.track('recording_failed', { ...(this.plan ? planProps(this.plan) : {}), reason: e.code });
+    playerHost.track('recording_failed', { ...(this.plan ? planProps(this.plan) : {}), reason: failureCode(e.code) });
     this.titleEl.textContent = 'Recording stopped';
     this.body.replaceChildren(...kids(
       h('p.rec-error-box', { role: 'alert', 'data-code': e.code }, errorText(e)),

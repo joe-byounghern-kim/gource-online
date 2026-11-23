@@ -234,10 +234,16 @@ export function validateDate(input: string): string | null {
 
 /** Subdirectory as the server stores it: no `./` or `/` prefix, no trailing `/`; '' = the whole tree. */
 export function normaliseSubdir(input: string): string {
-  let p = input.trim();
-  while (p.startsWith('./')) p = p.slice(2);
-  p = p.replace(/^\/+/, '').replace(/\/+$/, '');
-  return p === '.' ? '' : p;
+  const p = input.trim();
+  // Index scans, not regular expressions: linear in the input whatever it holds (CodeQL js/polynomial-redos). A trailing `/+$` was retried
+  // from every `/` in a run, so a long run of slashes inside a path took quadratic time.
+  let start = 0;
+  while (p.startsWith('./', start)) start += 2;
+  while (p.charCodeAt(start) === 47) start++;
+  let end = p.length;
+  while (end > start && p.charCodeAt(end - 1) === 47) end--;
+  const out = p.slice(start, end);
+  return out === '.' ? '' : out;
 }
 
 /** Validates the Advanced subdirectory field (the server's `validate_path`); empty is allowed. */

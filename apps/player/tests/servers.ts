@@ -23,7 +23,7 @@ const RECORDER = `<!doctype html><meta charset="utf-8"><link rel="icon" href="da
 window.got = [];
 addEventListener('message', (e) => {
   const player = document.querySelector('iframe.player')?.contentWindow ?? window.player;
-  window.got.push({ origin: e.origin, type: e.data?.type, code: e.data?.code, id: e.data?.id, fromPlayer: e.source === player });
+  window.got.push({ origin: e.origin, type: e.data?.type, code: e.data?.code, id: e.data?.id, event: e.data?.event, props: e.data?.props, fromPlayer: e.source === player });
 });
 </script>`;
 
@@ -115,9 +115,12 @@ export async function startOrigins(): Promise<{ origins: Origins; requests: Requ
 
 export const fragment = (params: Record<string, string>) => `#${new URLSearchParams(params)}`;
 
-export interface Got { origin: string; type: string; code?: string; id?: string; fromPlayer: boolean }
+export interface Got { origin: string; type: string; code?: string; id?: string; event?: string; props?: Record<string, unknown>; fromPlayer: boolean }
 export const got = (page: Page): Promise<Got[]> => page.evaluate(() => (window as unknown as { got: Got[] }).got);
-export const gotTypes = async (page: Page) => (await got(page)).map((m) => (m.code ? `${m.type}:${m.code}` : m.type));
+/** The handoff's messages, without the player's events. */
+export const gotTypes = async (page: Page) => (await got(page)).filter((m) => m.type !== 'event').map((m) => (m.code ? `${m.type}:${m.code}` : m.type));
+/** The player's events, as `{ event, props }`. */
+export const gotEvents = async (page: Page) => (await got(page)).filter((m) => m.type === 'event').map(({ event, props, origin, fromPlayer }) => ({ event, props, origin, fromPlayer }));
 export const mockCalls = (page: Page) => page.evaluate(() => window.__gourceMock?.calls.map((c) => `${c.method}(${c.args.join(',')})`) ?? []);
 
 /** Embeds the player in the current page, as `iframe.player`. */

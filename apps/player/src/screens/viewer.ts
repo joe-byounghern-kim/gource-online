@@ -473,6 +473,11 @@ export class ViewerScreen {
 
   // --- status / playback ---
 
+  /** The engine's status at the last poll, or null before the first. */
+  currentStatus(): EngineStatus | null {
+    return this.lastStatus;
+  }
+
   private pollStatus(): void {
     const engine = this.engine;
     if (!engine) return;

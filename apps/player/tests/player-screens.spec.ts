@@ -49,13 +49,14 @@ test('a local file has no link to copy, and the back button returns to the start
   await page.getByRole('button', { name: 'Open another log' }).click();
   await expectState(page, 'idle');
   await expect(page.locator('main[data-screen="viewer"]')).toHaveCount(0);
-  await expect(page.locator('.player-file-input')).toBeFocused();
+  await expect(page.locator('.player-empty').getByRole('button', { name: 'Open a log file' })).toBeFocused();
 });
 
 test('the licence, the exact source and the third-party notices are linked on the start screen and beside a log', async ({ page, request }) => {
   const check = async (note: Locator) => {
     const href = (name: string) => note.getByRole('link', { name }).evaluate((a) => (a as HTMLAnchorElement).href);
-    expect(await href('Source code')).toMatch(/^https:\/\/github\.com\/.+\/tree\/[^/]+$/);
+    // The public repository: the tree of a release tag, else its front page; never a branch that may not be public.
+    expect(await href('Source code')).toMatch(/^https:\/\/github\.com\/joe-byounghern-kim\/gource-online(?:\/tree\/v\d+\.\d+\.\d+[^/]*)?$/);
     expect(await (await request.get(await href('GPL-3.0-or-later'))).text()).toContain('GNU GENERAL PUBLIC LICENSE');
     expect((await request.get(await href('Third-party licences'))).ok()).toBe(true);
   };

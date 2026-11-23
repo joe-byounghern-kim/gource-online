@@ -6,19 +6,24 @@
 
 import { parseArgs } from 'node:util';
 
+/** Where the command's source can be read: the public repository (package.json `repository`). */
+export const SOURCE = 'https://github.com/joe-byounghern-kim/gource-online';
+
 export const USAGE = `Usage: npx gource-online [options]
 
-Run it anywhere inside a git repository. It reads the history with git,
-starts Gource on this computer and opens it in your browser. Nothing is
-uploaded.
+Plays your git repository's history in the browser. Run it anywhere inside
+the repository: it reads the history with git, serves Gource from 127.0.0.1
+and opens it in your browser. Nothing is uploaded.
 
 Options:
   --port <n>         Port on 127.0.0.1 (default: any free port)
   --no-open          Print the link instead of opening the browser
-  --output <file>    Write the history to <file> and exit, to open it in
-                     Gource later ("Open a local log file")
+  --output <file>    Save the history to <file> and exit, to open it in the
+                     Gource player later
   -h, --help         Show this help
   -v, --version      Show the version
+
+Source (GPL-3.0-or-later): ${SOURCE}
 `;
 
 /**
@@ -57,14 +62,14 @@ export function parseOptions(argv) {
       },
     });
   } catch (err) {
-    throw new UsageError(err instanceof Error ? err.message : String(err));
+    throw new UsageError(parseError(err));
   }
   const { values, positionals } = parsed;
   if (values.help) return { action: 'help', port: 0, open: true, output: null };
   if (values.version) return { action: 'version', port: 0, open: true, output: null };
   if (positionals.length > 0) {
     throw new UsageError(
-      `Unexpected argument "${positionals[0]}". Run the command inside the repository instead (cd into it first).`,
+      `Unexpected argument "${positionals[0]}".\nThe command takes no folder: cd into the repository and run it there.`,
     );
   }
   let port = 0;
@@ -78,4 +83,25 @@ export function parseOptions(argv) {
     throw new UsageError('--output needs a file name, such as --output history.gitlog.');
   }
   return { action: 'run', port, open: !values['no-open'], output: values.output ?? null };
+}
+
+/**
+ * Node's message for a mistake parseArgs found, in this command's words.
+ * @param {unknown} err
+ */
+function parseError(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  const code = /** @type {{ code?: string }} */ (err).code;
+  const unknown = /^Unknown option '([^']+)'/.exec(message)?.[1];
+  if (code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION' && unknown) return `Unknown option "${unknown}".`;
+  const option = /^Option '(?:-\w, )?(--[^' ]+)/.exec(message)?.[1];
+  if (code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE' && option) {
+    if (/argument missing/.test(message)) {
+      if (option === '--output') return '--output needs a file name, such as --output history.gitlog.';
+      if (option === '--port') return '--port needs a number from 1 to 65535, such as --port 8080.';
+      return `${option} needs a value.`;
+    }
+    if (/does not take an argument/.test(message)) return `${option} does not take a value.`;
+  }
+  return message;
 }

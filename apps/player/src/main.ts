@@ -4,7 +4,9 @@
 // handed over by URL or postMessage (./handoff.ts) or opened from a local
 // file, on the viewer screen: playback,
 // options, recording and the AI statistics. It has no sign-in, no account
-// and no paid features, reads no cookies and sends nothing anywhere.
+// and no paid features, and reads no cookies. It requests nothing but the
+// log it plays; only the page that opened or embeds it hears how playback
+// went (./events.ts).
 
 import { playerUrl } from '@gource-online/protocol';
 import { EngineMissingError, LogLoader, loadEngine, loadGourceFont, type GourceApp } from '@gource-online/viewer';
@@ -12,11 +14,15 @@ import { isDefault } from '@gource-online/viewer/options';
 import { ViewerScreen } from './screens/viewer';
 import './styles.css';
 import { messageHandoff, senderWindow, urlHandoff, type Handoff, type PlayerLog } from './handoff';
+import { PlaybackEvents, senderEvents } from './events';
+import { configurePlayerHost } from './host';
 import type { PlayerConfig } from './headers';
 import type { PlaybackState } from './playback';
 import { logSource } from './record/source';
 import { keepSettingsInMemory } from './saved-settings';
-import { sourceUrl } from './build-info';
+import { hostedSiteUrl, sourceUrl } from './build-info';
+import { icon } from './dom';
+import { mark, startScreen } from './start';
 import { clearTestHook, exposeEngine } from './test-hooks';
 
 declare const __PLAYER_CONFIG__: PlayerConfig;
@@ -29,6 +35,10 @@ const MOCK = __PLAYER_MOCK__ && new URLSearchParams(window.location.search).has(
 /** Embedded in another page: keyboard focus stays where that page put it. */
 const EMBEDDED = window.parent !== window;
 const fontReady = loadGourceFont(`${BASE}fonts/FreeSans.ttf`);
+/** The page that opened or embeds the player: the only one that may hand it a log, and hear how playback went. */
+const sender = senderWindow(window);
+const toSender = senderEvents(sender, CONFIG.senders);
+configurePlayerHost({ track: toSender.track });
 
 type State = 'idle' | 'waiting' | 'loading' | 'playing' | 'failed';
 
@@ -55,21 +65,18 @@ function licenceNote(): HTMLElement {
 const title = el('h1', { className: 'player-title', textContent: 'Gource player' });
 const status = el('p', { className: 'player-status', role: 'status' });
 const fileInput = el('input', { type: 'file', className: 'player-file-input', accept: '.log,.gitlog,.txt,text/plain' });
-const openLabel = el('label', { className: 'player-open' }, 'Open a log file', fileInput);
+/** While a log loads or a page hands one over, the start screen is hidden: this opens a local file instead. */
+const openLabel = el('label', { className: 'player-open btn btn-small' }, icon('upload'), 'Open a log file', fileInput);
 const banner = el('p', { className: 'player-banner', role: 'alert', hidden: true });
-const empty = el(
-  'section',
-  { className: 'player-empty' },
-  el('h2', { textContent: 'Play a Gource log' }),
-  el('p', { textContent: 'Open a custom Gource log, or the output of Gource\'s git log command, or drop the file on this page.' }),
-  el('p', { textContent: 'The file is read on this computer. Nothing is uploaded.' }),
-  licenceNote(),
-);
+const start = startScreen({ site: hostedSiteUrl(CONFIG.senders), embedded: EMBEDDED, licence: licenceNote(), open: () => fileInput.click() });
+const empty = start.el;
+// Shown only once the player knows no log is coming (setState), so a log by link or by a page never flashes it.
+empty.hidden = true;
 /** The start screen: open a file, wait for a page's log, or say what went wrong. The viewer replaces it while a log plays. */
 const main = el(
   'main',
   { className: 'player' },
-  el('header', { className: 'player-bar' }, title, status, openLabel),
+  el('header', { className: 'player-bar' }, el('div', { className: 'player-brand' }, mark(), title), status, openLabel),
   banner,
   empty,
 );
@@ -81,6 +88,7 @@ interface Run {
   cancelled: boolean;
   /** The viewer is on screen. */
   shown: boolean;
+  events: PlaybackEvents;
 }
 let run: Run | null = null;
 let pending: { cancel(): void } | null = null;
@@ -92,8 +100,8 @@ let lastLink = '';
 function setState(state: State): void {
   main.dataset.state = state;
   main.hidden = state === 'playing';
-  // While the player waits for a page that may never send a log, the person can still open a file.
-  empty.hidden = state === 'loading';
+  // While a log loads, or a page may still hand one over, the bar's button opens a file instead (styles.css).
+  empty.hidden = state !== 'idle' && state !== 'failed';
 }
 
 function notice(message: string): void {
@@ -103,6 +111,7 @@ function notice(message: string): void {
 
 function stop(): void {
   if (!run) return;
+  run.events.end();
   run.cancelled = true;
   run.loader?.cancel();
   run.viewer.dispose();
@@ -217,11 +226,12 @@ function play(log: PlayerLog, from: 'url' | 'message' | 'file'): void {
       stop();
       reset();
       setState('idle');
-      fileInput.focus();
+      start.openButton.focus();
     },
     onRetry: () => play(log, from),
   });
-  const current: Run = { viewer, loader: null, cancelled: false, shown: false };
+  const events = new PlaybackEvents(toSender.track, from);
+  const current: Run = { viewer, loader: null, cancelled: false, shown: false, events };
   run = current;
   if (byUrl) {
     linked = log;
@@ -249,6 +259,7 @@ function play(log: PlayerLog, from: 'url' | 'message' | 'file'): void {
     viewer.el.hidden = false;
     setState('playing');
     viewer.show(!EMBEDDED);
+    events.shown(() => viewer.currentStatus());
   };
 
   void (async () => {
@@ -274,6 +285,7 @@ function play(log: PlayerLog, from: 'url' | 'message' | 'file'): void {
       },
       done: (done) => {
         Object.assign(state.loading, { bytes: done.bytes, commits: done.commits, finished: true, format: done.format });
+        events.loaded(done.bytes, done.commits);
         ready();
         viewer.updateLoading(state);
       },
@@ -292,7 +304,11 @@ function play(log: PlayerLog, from: 'url' | 'message' | 'file'): void {
 }
 
 function take(handoff: Handoff, from: 'url' | 'message'): void {
-  if (handoff.kind === 'log') play(handoff.log, from);
+  if (handoff.kind === 'log') {
+    // A page handed this log over: only that page's origin hears how it plays.
+    if (handoff.origin) toSender.only(handoff.origin);
+    play(handoff.log, from);
+  }
   else if (handoff.kind === 'failed') fail(handoff.message);
   else setState('idle');
 }
@@ -304,9 +320,25 @@ fileInput.addEventListener('change', () => {
   openFile(fileInput.files?.[0]);
   fileInput.value = '';
 });
+// A file dragged over the start screen lights up where it can go.
+let dragDepth = 0;
+const dragEnd = () => {
+  dragDepth = 0;
+  delete main.dataset.dragging;
+};
+document.addEventListener('dragenter', (event) => {
+  if (!event.dataTransfer?.types.includes('Files')) return;
+  dragDepth += 1;
+  main.dataset.dragging = '';
+});
+document.addEventListener('dragleave', () => {
+  dragDepth -= 1;
+  if (dragDepth <= 0) dragEnd();
+});
 document.addEventListener('dragover', (event) => event.preventDefault());
 document.addEventListener('drop', (event) => {
   event.preventDefault();
+  dragEnd();
   openFile(event.dataTransfer?.files[0]);
 });
 
@@ -322,9 +354,14 @@ window.addEventListener('hashchange', () => {
   } else if (next) take(next, 'url');
 });
 
+// The page closes or goes elsewhere: the log stops playing.
+window.addEventListener('pagehide', () => run?.events.end());
+
 const byUrl = urlHandoff(window.location, CONFIG);
-const sender = senderWindow(window);
 if (byUrl) {
+  // No log comes from the page that opened this window, and no page this window goes to may reach back to it.
+  // The player still tells that page how playback went, through `sender`.
+  window.opener = null;
   take(byUrl, 'url');
 } else if (sender && CONFIG.senders.length) {
   setState('waiting');

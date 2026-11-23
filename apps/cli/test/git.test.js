@@ -48,6 +48,8 @@ test('the history holds headers, the AI line and raw changes', async () => {
   assert.match(text, /\nuser:Jane Doe\n1700000100\n/);
   assert.match(text, / D\tREADME/);
   assert.ok(seen.length > 0);
+  assert.equal(history.earliest, 1700000000);
+  assert.equal(history.latest, 1700000100);
 });
 
 test('a repository without commits is reported as such', async () => {
@@ -64,4 +66,19 @@ test('commit headers are counted across any chunk boundary', () => {
     for (let i = 0; i < text.length; i += size) counter.push(text.subarray(i, i + size));
     assert.equal(counter.commits, 3, `chunk size ${size}`);
   }
+});
+
+test('the oldest and newest commit times are kept across any chunk boundary', () => {
+  // Out of order on purpose (time travel), and a time line that is not a number is skipped.
+  const text = Buffer.from('user:a\n1700000100\nm1:x\n:x A\tf\n\nuser:b\n1600000000\n\nuser:c\n17x\n\nuser:d\n1800000000\n12\n');
+  for (let size = 1; size <= text.length; size++) {
+    const counter = new CommitCounter();
+    for (let i = 0; i < text.length; i += size) counter.push(text.subarray(i, i + size));
+    assert.equal(counter.commits, 4, `chunk size ${size}`);
+    assert.equal(counter.earliest, 1600000000, `chunk size ${size}`);
+    assert.equal(counter.latest, 1800000000, `chunk size ${size}`);
+  }
+  const none = new CommitCounter();
+  none.push(Buffer.from('user:a'));
+  assert.deepEqual([none.commits, none.earliest, none.latest], [1, null, null]);
 });

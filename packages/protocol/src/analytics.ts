@@ -28,6 +28,9 @@ export const ANALYTICS_EVENTS = {
 
 export type AnalyticsEvent = keyof typeof ANALYTICS_EVENTS;
 
+/** The properties the page adds to every event itself (`app_version`, `screen`), never another sender's. */
+export const ANALYTICS_COMMON_PROPS: readonly string[] = Object.freeze(Object.keys(COMMON));
+
 export interface AnalyticsRecord {
   event: AnalyticsEvent;
   /** Milliseconds since the epoch, on the client. */
@@ -83,6 +86,9 @@ const SIZE_STEPS: [number, string][] = [
   [10_000_000, '<10MB'],
   [100_000_000, '<100MB'],
 ];
+
+/** The classes `sizeBucket` gives, smallest first. */
+export const SIZE_CLASSES: readonly string[] = Object.freeze([...SIZE_STEPS.map(([, label]) => label), '>=100MB']);
 
 /** A coarse size class, so a log's exact size never identifies it. */
 export function sizeBucket(bytes: number): string {

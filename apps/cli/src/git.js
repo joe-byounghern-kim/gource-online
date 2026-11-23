@@ -48,18 +48,32 @@ export class GitError extends Error {
  */
 export function findRepository(cwd) {
   const out = spawnSync('git', ['rev-parse', '--show-toplevel'], { cwd, encoding: 'utf8' });
-  if (out.error) {
-    throw new GitError('git_missing', 'git was not found. Install git and run this again.');
-  }
+  if (out.error) throw gitMissing();
   const root = out.stdout.trim();
   if (out.status !== 0 || root === '') {
-    const detail = out.stderr.trim().split('\n').pop() ?? '';
+    const stderr = out.stderr.trim();
+    if (stderr === '' || /not a git repository/i.test(stderr)) {
+      throw new GitError(
+        'not_a_repo',
+        `${cwd} is not inside a git repository.\nRun it from your project's folder: cd into the repository, then npx gource-online.`,
+      );
+    }
+    // Anything else (such as git refusing a folder another user owns): git's own words.
+    const detail = stderr.split('\n').find((line) => line.startsWith('fatal:')) ?? stderr.split('\n')[0];
     throw new GitError(
-      'not_a_repo',
-      `${cwd} is not inside a git repository. Run this in your project's folder.${detail ? `\n  (${detail})` : ''}`,
+      'git_failed',
+      `git could not read the repository in ${cwd}:\n  ${detail}\nRun "git status" there to see what git needs.`,
     );
   }
   return { root, name: basename(root) || 'repository' };
+}
+
+function gitMissing() {
+  return new GitError('git_missing', 'git was not found on this computer.\nInstall git (https://git-scm.com), then run this again.');
+}
+
+function noCommits() {
+  return new GitError('no_commits', 'This repository has no commits yet.\nMake a first commit, then run this again.');
 }
 
 /**
@@ -67,6 +81,8 @@ export function findRepository(cwd) {
  * @property {Buffer[]} chunks  git's output, in order
  * @property {number} bytes
  * @property {number} commits
+ * @property {number | null} earliest  the oldest commit time, unix seconds
+ * @property {number | null} latest    the newest commit time, unix seconds
  */
 
 /**
@@ -93,47 +109,79 @@ export function readHistory(root, progress) {
     git.stderr.on('data', (/** @type {string} */ text) => {
       if (stderr.length < 8192) stderr += text;
     });
-    git.on('error', () => reject(new GitError('git_missing', 'git was not found. Install git and run this again.')));
+    git.on('error', () => reject(gitMissing()));
     git.on('close', (status) => {
       if (status !== 0) {
         const detail = stderr.trim().split('\n').pop() ?? '';
         if (/does not have any commits yet|bad default revision/.test(stderr)) {
-          reject(new GitError('no_commits', 'This repository has no commits yet.'));
+          reject(noCommits());
         } else {
-          reject(new GitError('git_failed', `git log failed${detail ? `: ${detail}` : ` (exit status ${status})`}`));
+          reject(
+            new GitError(
+              'git_failed',
+              `git log failed${detail ? `:\n  ${detail}` : ` (exit status ${status}).`}\nRun "git log" in the repository to see what git says.`,
+            ),
+          );
         }
         return;
       }
       if (counter.commits === 0) {
-        reject(new GitError('no_commits', 'This repository has no commits yet.'));
+        reject(noCommits());
         return;
       }
-      resolve({ chunks, bytes, commits: counter.commits });
+      resolve({ chunks, bytes, commits: counter.commits, earliest: counter.earliest, latest: counter.latest });
     });
   });
 }
 
 const USER = Buffer.from('user:');
 
-/** Counts commit headers (lines starting with `user:`) across chunk boundaries. */
+/**
+ * Counts commit headers (lines starting with `user:`) across chunk boundaries,
+ * and keeps the oldest and newest commit time: the line after each header.
+ */
 export class CommitCounter {
   commits = 0;
+  /** @type {number | null} */
+  earliest = null;
+  /** @type {number | null} */
+  latest = null;
   /** How much of `user:` the current line matched so far; -1 once it cannot match. */
   #pos = 0;
+  /** 0: any line, 1: the rest of a header line, 2: the time line after it. */
+  #state = 0;
+  #time = 0;
+  /** Digits on the time line so far; -1 once it holds anything else. */
+  #digits = 0;
 
   /** @param {Uint8Array} chunk */
   push(chunk) {
     let pos = this.#pos;
+    let state = this.#state;
+    let time = this.#time;
+    let digits = this.#digits;
     for (let i = 0; i < chunk.length; i++) {
       const b = chunk[i];
       if (b === 10) {
+        if (state === 2 && digits > 0) this.#seen(time);
+        state = state === 1 ? 2 : 0;
+        time = 0;
+        digits = 0;
         pos = 0;
+      } else if (state === 2) {
+        if (digits >= 0 && b >= 48 && b <= 57) {
+          time = time * 10 + (b - 48);
+          digits++;
+        } else {
+          digits = -1;
+        }
       } else if (pos >= 0) {
         if (b === USER[pos]) {
           pos++;
           if (pos === USER.length) {
             this.commits++;
             pos = -1;
+            state = 1;
           }
         } else {
           pos = -1;
@@ -141,5 +189,14 @@ export class CommitCounter {
       }
     }
     this.#pos = pos;
+    this.#state = state;
+    this.#time = time;
+    this.#digits = digits;
+  }
+
+  /** @param {number} time */
+  #seen(time) {
+    if (this.earliest === null || time < this.earliest) this.earliest = time;
+    if (this.latest === null || time > this.latest) this.latest = time;
   }
 }

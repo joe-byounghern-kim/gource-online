@@ -65,9 +65,10 @@ export interface PrivateActivityRepository {
 }
 /** POST /api/activity/private/discover. Private discovery is a request of its own, apart from public discovery, and counts
  * as its own search, unless it is chained: `public_discovery` names the public discovery of the same Find, over the same
- * range (another range is refused), and the first private discovery chained to it is not counted again, even if it fails. A page runs it only when the person asks to
- * find projects, and not when GitHub has just reported no usable installation. Its repositories can be analyzed together
- * with public ones: see {@link PrivateConsentRequest}. */
+ * range (another range is refused), and the first private discovery chained to it is not counted again, even if it fails. A page runs it only when the person
+ * starts an analysis of repositories they chose (to list them, see {@link PrivateRepositoryList}, which is not a search), and
+ * not when GitHub has just reported no usable installation. Its repositories can be analyzed together with public ones: see
+ * {@link PrivateConsentRequest}. */
 export interface HostedPrivateDiscoveryRequest { range: ActivityRange; public_discovery?: string }
 export interface HostedPrivateDiscoveryResponse {
   discovery: string;
@@ -150,6 +151,43 @@ export function readPrivateAccessStatus(value: unknown): Readonly<PrivateAccessS
   if (Object.keys(o).length !== 1 || !Number.isSafeInteger(o.installations) || (o.installations as number) < 0
     || (o.installations as number) > MAX_PRIVATE_ACCESS_INSTALLATIONS) return null;
   return Object.freeze({ installations: o.installations as number });
+}
+
+/** GET /api/activity/private/repositories (#208): the private and internal repositories the signed-in user may read
+ *  through the App's installations, as a list to choose from. Listing is not a search: it counts toward no allowance and
+ *  pins nothing for consent. A chosen repository is still found over its period by {@link HostedPrivateDiscoveryRequest}
+ *  before anything is analyzed. Names and display hints only, never an installation, account or repository id. At most
+ *  {@link MAX_PRIVATE_REPOSITORY_LIST} entries, most recently pushed first; `truncated` says that more exist. */
+export interface PrivateRepositoryListEntry {
+  name: string;
+  visibility: 'private' | 'internal';
+  /** Whether the repository belongs to the user or to an organization. A display hint only. */
+  owner: 'personal' | 'organization';
+  fork: boolean;
+  /** When GitHub last saw a push, or null when it does not say. */
+  pushed_at: string | null;
+}
+export interface PrivateRepositoryList { repositories: readonly PrivateRepositoryListEntry[]; truncated: boolean }
+export const MAX_PRIVATE_REPOSITORY_LIST = 100;
+/** Copy only the listing contract: unknown fields (an id of any kind) never propagate. One entry per name, ignoring case
+ *  as GitHub does. */
+export function readPrivateRepositoryList(value: unknown): PrivateRepositoryList | null {
+  try {
+    const o = record(value);
+    if (!o || typeof o.truncated !== 'boolean' || !Array.isArray(o.repositories) || o.repositories.length > MAX_PRIVATE_REPOSITORY_LIST) return null;
+    const repositories: PrivateRepositoryListEntry[] = [], seen = new Set<string>();
+    for (const raw of o.repositories) {
+      const r = record(raw);
+      if (!r || typeof r.name !== 'string' || r.name.length > 256 || typeof r.fork !== 'boolean'
+        || (r.visibility !== 'private' && r.visibility !== 'internal') || (r.owner !== 'personal' && r.owner !== 'organization')
+        || (r.pushed_at !== null && !instant(r.pushed_at))) return null;
+      const parsed = parseRepoUrl(`https://github.com/${r.name}.git`);
+      if (!parsed.ok || parsed.repo.host !== 'github.com' || parsed.repo.path !== r.name || seen.has(r.name.toLowerCase())) return null;
+      seen.add(r.name.toLowerCase());
+      repositories.push(Object.freeze({ name: r.name, visibility: r.visibility, owner: r.owner, fork: r.fork, pushed_at: r.pushed_at as string | null }));
+    }
+    return Object.freeze({ repositories: Object.freeze(repositories), truncated: o.truncated });
+  } catch { return null; }
 }
 
 export function readPrivateInstallOutcome(value: unknown): PrivateInstallOutcome | null {

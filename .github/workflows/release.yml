@@ -54,10 +54,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
-    # Both player builds (player-dist and the CLI's copy) link this exact source.
+    # Both player builds (player-dist and the CLI's copy) link their source: always the public repository, whichever
+    # repository runs this, and the tag of a release. A dry run (any branch, possibly in a private repository) names
+    # no ref, so the page links the public repository's front page, never a branch that is not public.
     env:
-      GOURCE_SOURCE_REF: ${{ github.ref_name }}
-      GOURCE_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      GOURCE_SOURCE_REF: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+      GOURCE_REPO_URL: https://github.com/joe-byounghern-kim/gource-online
     steps:
       - uses: actions/checkout@v7
       - id: v
